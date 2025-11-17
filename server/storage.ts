@@ -1,6 +1,6 @@
-import { type User, type InsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminUser, type InsertAdminUser } from "../shared/schema";
-import { GoogleSheetsStorage } from "./googleSheetsStorage";
-import { MemoryStorage } from "./memoryStorage";
+import { type User, type InsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminUser, type InsertAdminUser } from "../shared/schema.js";
+import { GoogleSheetsStorage } from "./googleSheetsStorage.js";
+import { MemoryStorage } from "./memoryStorage.js";
 
 // modify the interface with any CRUD methods
 // you might need

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
 
 const app = express();
 app.use(express.json());
@@ -40,7 +40,7 @@ app.use((req, res, next) => {
 (async () => {
   // Seed database in development mode
   if (process.env.NODE_ENV === 'development') {
-    const { seedDatabase } = await import('./seed');
+    const { seedDatabase } = await import('./seed.js');
     await seedDatabase();
   }
   

@@ -1,4 +1,4 @@
-import { storage } from "./storage";
+import { storage } from "./storage.js";
 
 // Seed data based on existing frontend job data
 const seedJobs = [

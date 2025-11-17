@@ -1,5 +1,5 @@
-import { type User, type InsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminUser, type InsertAdminUser } from "../shared/schema";
-import { IStorage } from "./storage";
+import { type User, type InsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminUser, type InsertAdminUser } from "../shared/schema.js";
+import { IStorage } from "./storage.js";
 
 export class MemoryStorage implements IStorage {
   private users: User[] = [];
