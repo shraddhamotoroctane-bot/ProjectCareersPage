@@ -95,6 +95,18 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    res.json({ 
+      status: "ok", 
+      timestamp: new Date().toISOString(),
+      storage: storage.constructor.name,
+      hasGoogleSheetId: !!process.env.GOOGLE_SHEET_ID,
+      hasServiceAccount: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY
+    });
+  });
+
   // Job Routes
   
   // Get all active jobs
