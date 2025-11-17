@@ -4,12 +4,14 @@
     "noEmit": false,
     "outDir": "server-build",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "target": "ES2020",
-    "jsx": "react",
-    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server"
+    "jsx": "react-jsx",
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": false,
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",
+    "skipLibCheck": true
   },
   "include": ["server/**/*", "shared/**/*"],
   "exclude": ["node_modules", "client", "dist", "server-build"]
 }
-
