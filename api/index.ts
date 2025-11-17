@@ -2,9 +2,27 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
-import { registerRoutes } from '../server/routes';
+import type { registerRoutes as RegisterRoutesType } from '../server/routes';
 
 let app: express.Application | null = null;
+let registerRoutesFn: typeof RegisterRoutesType | null = null;
+
+async function loadRegisterRoutes() {
+  if (registerRoutesFn) return registerRoutesFn;
+
+  const isProd = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+  const modulePath = isProd ? '../server-build/server/routes.js' : '../server/routes';
+
+  try {
+    const mod = await import(modulePath);
+    registerRoutesFn = mod.registerRoutes as typeof RegisterRoutesType;
+  } catch (error) {
+    console.error(`Failed to load registerRoutes from ${modulePath}`, error);
+    throw error;
+  }
+
+  return registerRoutesFn!;
+}
 
 async function getApp(): Promise<express.Application> {
   if (app) return app;
@@ -25,6 +43,7 @@ async function getApp(): Promise<express.Application> {
   });
 
   // Register API routes FIRST (before static file serving)
+  const registerRoutes = await loadRegisterRoutes();
   const httpServer = await registerRoutes(expressApp);
 
   // Serve static files in production (only for non-API routes)
