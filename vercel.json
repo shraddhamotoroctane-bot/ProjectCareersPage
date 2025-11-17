@@ -17,11 +17,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 30,
-      "includeFiles": [
-        "server-build/**",
-        "shared/**",
-        "attached_assets/**"
-      ]
+      "includeFiles": "server-build/**"
     }
   }
 }
