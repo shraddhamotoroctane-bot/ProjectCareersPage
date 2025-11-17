@@ -100,11 +100,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all active jobs
   app.get("/api/jobs", async (req, res) => {
     try {
+      console.log("Fetching active jobs...");
+      console.log("Storage type:", storage.constructor.name);
       const jobs = await storage.getActiveJobs();
+      console.log(`Found ${jobs.length} active jobs`);
       res.json(jobs);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching jobs:", error);
-      res.status(500).json({ error: "Failed to fetch jobs" });
+      console.error("Error stack:", error?.stack);
+      res.status(500).json({ 
+        error: "Failed to fetch jobs",
+        message: error?.message || "Unknown error",
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      });
     }
   });
 

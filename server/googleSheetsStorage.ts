@@ -292,8 +292,9 @@ export class GoogleSheetsStorage implements IStorage {
   private async readSheet(range: string): Promise<any[][]> {
     await this.ensureInitialized();
     if (!this.sheets) {
-      console.log('Google Sheets not initialized, returning empty data');
-      return [];
+      const errorMsg = 'Google Sheets not initialized - check credentials';
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
     try {
       const response = await this.sheets.spreadsheets.values.get({
@@ -301,9 +302,11 @@ export class GoogleSheetsStorage implements IStorage {
         range: range,
       });
       return response.data.values || [];
-    } catch (error) {
-      console.error(`Error reading sheet range ${range}:`, error);
-      return [];
+    } catch (error: any) {
+      const errorMsg = `Error reading sheet range ${range}: ${error?.message || error}`;
+      console.error(errorMsg);
+      console.error('Full error:', error);
+      throw new Error(errorMsg);
     }
   }
 
@@ -476,21 +479,39 @@ export class GoogleSheetsStorage implements IStorage {
   // Jobs methods
   // Jobs methods
 async getAllJobs(): Promise<Job[]> {
-  const rows = await this.readSheet('Jobs!A2:L1000'); // skip header
-  return rows.map(row => ({
-    id: row[0],
-    title: row[1],
-    department: row[2],
-    type: row[3],
-    level: row[4] || null, // Handle missing level gracefully
-    location: row[5],
-    description: row[6],
-    requirements: row[7] ? JSON.parse(row[7]) : [],
-    applicationUrl: row[8],
-    isActive: row[9] === 'TRUE',
-    createdAt: new Date(row[10] || Date.now()),
-    updatedAt: new Date(row[11] || Date.now()),
-  }));
+  try {
+    console.log('Reading jobs from Google Sheet:', this.spreadsheetId);
+    const rows = await this.readSheet('Jobs!A2:L1000'); // skip header
+    console.log(`Read ${rows.length} rows from Jobs sheet`);
+    
+    if (rows.length === 0) {
+      console.warn('No jobs found in sheet - sheet might be empty or range is incorrect');
+      return [];
+    }
+    
+    const jobs = rows
+      .filter(row => row && row.length > 0 && row[0]) // Filter out empty rows
+      .map(row => ({
+        id: row[0],
+        title: row[1],
+        department: row[2],
+        type: row[3],
+        level: row[4] || null, // Handle missing level gracefully
+        location: row[5],
+        description: row[6],
+        requirements: row[7] ? (typeof row[7] === 'string' ? JSON.parse(row[7]) : row[7]) : [],
+        applicationUrl: row[8],
+        isActive: row[9] === 'TRUE' || row[9] === true,
+        createdAt: new Date(row[10] || Date.now()),
+        updatedAt: new Date(row[11] || Date.now()),
+      }));
+    
+    console.log(`Parsed ${jobs.length} jobs from sheet`);
+    return jobs;
+  } catch (error: any) {
+    console.error('Error in getAllJobs:', error);
+    throw new Error(`Failed to fetch jobs from Google Sheets: ${error?.message || error}`);
+  }
 }
 
 async getActiveJobs(): Promise<Job[]> {

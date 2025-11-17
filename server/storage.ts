@@ -34,6 +34,22 @@ export interface IStorage {
 }
 
 // Use memory storage for development if Google Sheets credentials are not available
-const useMemoryStorage = !process.env.GOOGLE_SHEET_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const hasGoogleSheetId = !!process.env.GOOGLE_SHEET_ID;
+const hasServiceAccountEmail = !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const hasPrivateKey = !!process.env.GOOGLE_PRIVATE_KEY;
+
+const useMemoryStorage = !hasGoogleSheetId || !hasServiceAccountEmail || !hasPrivateKey;
+
+if (useMemoryStorage) {
+  console.warn('⚠️ Using MemoryStorage - Google Sheets credentials not found');
+  console.warn('Missing:', {
+    GOOGLE_SHEET_ID: !hasGoogleSheetId,
+    GOOGLE_SERVICE_ACCOUNT_EMAIL: !hasServiceAccountEmail,
+    GOOGLE_PRIVATE_KEY: !hasPrivateKey
+  });
+} else {
+  console.log('✅ Using GoogleSheetsStorage');
+  console.log('Google Sheet ID:', process.env.GOOGLE_SHEET_ID);
+}
 
 export const storage = useMemoryStorage ? new MemoryStorage() : new GoogleSheetsStorage();
