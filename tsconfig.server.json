@@ -11,7 +11,7 @@
     "allowImportingTsExtensions": false,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",
     "skipLibCheck": true,
-    "types": ["node", "ws"]
+    "types": ["node"]
   },
   "include": ["server/**/*", "shared/**/*"],
   "exclude": ["node_modules", "client", "dist", "server-build"]
