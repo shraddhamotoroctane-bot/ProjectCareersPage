@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminUser, type InsertAdminUser } from "@shared/schema";
+import { type User, type InsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminUser, type InsertAdminUser } from "../shared/schema";
 import { GoogleSheetsStorage } from "./googleSheetsStorage";
 import { MemoryStorage } from "./memoryStorage";
 
