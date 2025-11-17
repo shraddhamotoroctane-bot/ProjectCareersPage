@@ -515,8 +515,17 @@ async getAllJobs(): Promise<Job[]> {
 }
 
 async getActiveJobs(): Promise<Job[]> {
-  const allJobs = await this.getAllJobs();
-  return allJobs.filter(job => job.isActive);
+  try {
+    console.log("getActiveJobs: Starting...");
+    const allJobs = await this.getAllJobs();
+    console.log(`getActiveJobs: Got ${allJobs.length} total jobs`);
+    const activeJobs = allJobs.filter(job => job.isActive);
+    console.log(`getActiveJobs: ${activeJobs.length} active jobs after filtering`);
+    return activeJobs;
+  } catch (error: any) {
+    console.error("getActiveJobs error:", error);
+    throw error;
+  }
 }
 
   async getJob(id: string): Promise<Job | undefined> {

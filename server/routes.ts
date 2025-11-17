@@ -112,18 +112,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all active jobs
   app.get("/api/jobs", async (req, res) => {
     try {
-      console.log("Fetching active jobs...");
+      console.log("=== FETCHING JOBS ===");
       console.log("Storage type:", storage.constructor.name);
+      console.log("Environment check:", {
+        hasGoogleSheetId: !!process.env.GOOGLE_SHEET_ID,
+        hasServiceAccount: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY
+      });
+      
       const jobs = await storage.getActiveJobs();
       console.log(`Found ${jobs.length} active jobs`);
+      
+      if (jobs.length === 0) {
+        console.warn("⚠️ No jobs found - this could mean:");
+        console.warn("1. Google Sheet is empty");
+        console.warn("2. All jobs are marked as inactive (IsActive = FALSE)");
+        console.warn("3. Storage is using MemoryStorage (env vars missing)");
+      }
+      
+      console.log("=== JOBS FETCH COMPLETE ===");
       res.json(jobs);
     } catch (error: any) {
-      console.error("Error fetching jobs:", error);
+      console.error("=== ERROR FETCHING JOBS ===");
+      console.error("Error message:", error?.message);
       console.error("Error stack:", error?.stack);
+      console.error("Storage type:", storage.constructor.name);
+      console.error("=== END ERROR ===");
+      
       res.status(500).json({ 
         error: "Failed to fetch jobs",
         message: error?.message || "Unknown error",
-        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+        storageType: storage.constructor.name,
+        hasEnvVars: {
+          sheetId: !!process.env.GOOGLE_SHEET_ID,
+          serviceAccount: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+          privateKey: !!process.env.GOOGLE_PRIVATE_KEY
+        }
       });
     }
   });
