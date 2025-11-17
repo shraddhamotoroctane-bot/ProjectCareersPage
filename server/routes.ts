@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
     try {
-      const healthData = {
+      const healthData: Record<string, any> = {
         status: "ok",
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || "unknown",
