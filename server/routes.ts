@@ -97,14 +97,58 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
-    res.json({ 
-      status: "ok", 
-      timestamp: new Date().toISOString(),
-      storage: storage.constructor.name,
-      hasGoogleSheetId: !!process.env.GOOGLE_SHEET_ID,
-      hasServiceAccount: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY
-    });
+    try {
+      const healthData = {
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "unknown",
+        storage: {
+          type: storage.constructor.name,
+          isGoogleSheets: storage.constructor.name === "GoogleSheetsStorage",
+          isMemory: storage.constructor.name === "MemoryStorage"
+        },
+        environmentVariables: {
+          hasGoogleSheetId: !!process.env.GOOGLE_SHEET_ID,
+          hasServiceAccount: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+          hasPrivateKey: !!process.env.GOOGLE_PRIVATE_KEY,
+          googleSheetId: process.env.GOOGLE_SHEET_ID || "NOT SET",
+          serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? 
+            process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.substring(0, 20) + "..." : "NOT SET"
+        },
+        diagnostics: {
+          usingMemoryStorage: storage.constructor.name === "MemoryStorage",
+          reason: storage.constructor.name === "MemoryStorage" 
+            ? "Environment variables missing - using MemoryStorage (empty)"
+            : "Using GoogleSheetsStorage - configured correctly"
+        }
+      };
+
+      // Try to get job count if using Google Sheets
+      if (storage.constructor.name === "GoogleSheetsStorage") {
+        try {
+          const jobs = await storage.getAllJobs();
+          const activeJobs = await storage.getActiveJobs();
+          healthData.jobs = {
+            total: jobs.length,
+            active: activeJobs.length,
+            inactive: jobs.length - activeJobs.length
+          };
+        } catch (error: any) {
+          healthData.jobs = {
+            error: error.message,
+            note: "Could not fetch jobs - check Google Sheets access"
+          };
+        }
+      }
+
+      res.json(healthData);
+    } catch (error: any) {
+      res.status(500).json({
+        status: "error",
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 
   // Job Routes
