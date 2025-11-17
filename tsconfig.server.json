@@ -10,7 +10,8 @@
     "allowSyntheticDefaultImports": true,
     "allowImportingTsExtensions": false,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo.server",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node", "ws"]
   },
   "include": ["server/**/*", "shared/**/*"],
   "exclude": ["node_modules", "client", "dist", "server-build"]
