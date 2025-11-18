@@ -25,6 +25,7 @@ Use this guide to take the project live on [Render](https://render.com).
 | `GOOGLE_SHEET_ID`           | ID from your Google Sheets URL (`/d/<ID>/edit`)  |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `client_email` from the service account JSON |
 | `GOOGLE_PRIVATE_KEY`        | `private_key` from the service account JSON      |
+| `FILE_STORAGE_DRIVER`       | `google` (recommended) or `local`                |
 
 > **Important – `GOOGLE_PRIVATE_KEY` formatting on Render**
 >
@@ -36,6 +37,7 @@ Use this guide to take the project live on [Render](https://render.com).
 > This avoids the OpenSSL decoder error (`ERR_OSSL_UNSUPPORTED`).
 
 Render automatically provides `PORT`, so you do **not** need to set it.
+If you set `FILE_STORAGE_DRIVER=google`, resumes are uploaded to Google Drive and links in Google Sheets will always download successfully.
 
 ---
 

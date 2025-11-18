@@ -6,6 +6,7 @@ import { insertJobSchema, insertApplicationSchema } from "../shared/schema.js";
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
+import { GoogleDriveService } from "./googleDriveService.js";
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(process.cwd(), 'server', 'uploads');
@@ -13,6 +14,10 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
   console.log('Created uploads directory:', uploadsDir);
 }
+
+const fileStorageDriver = (process.env.FILE_STORAGE_DRIVER || process.env.FILE_STORAGE || "local").toLowerCase();
+const useGoogleDrive = fileStorageDriver === "google" || fileStorageDriver === "gdrive" || fileStorageDriver === "drive";
+const googleDriveService = useGoogleDrive ? new GoogleDriveService() : null;
 
 // Configure multer for local file storage with enhanced security
 const upload = multer({
@@ -479,13 +484,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Create accessible URL for the file
-        const protocol = req.protocol;
-        const host = req.get('host');
-        cvUrl = `${protocol}://${host}/api/files/${cvFile.filename}`;
+        if (useGoogleDrive && googleDriveService) {
+          console.log('☁️ Uploading CV to Google Drive (file storage driver: google)');
+          const filePath = cvFile.path || path.join(cvFile.destination || uploadsDir, cvFile.filename);
+          const fileBuffer = fs.readFileSync(filePath);
+          const originalName = cvFile.originalname || cvFile.filename;
+          const mimeType = cvFile.mimetype || 'application/pdf';
+          
+          cvUrl = await googleDriveService.uploadCVToFolder(fileBuffer, originalName, mimeType);
+          
+          // Remove the temporary local file once uploaded
+          fs.unlink(filePath, () => {});
+          console.log(`✅ CV uploaded to Google Drive. Public link: ${cvUrl}`);
+        } else {
+          // Create accessible URL for the local file
+          const forwardedProto = req.headers["x-forwarded-proto"];
+          const protocol = typeof forwardedProto === "string" ? forwardedProto.split(",")[0] : req.protocol;
+          const host = req.get('host');
+          cvUrl = `${protocol}://${host}/api/files/${cvFile.filename}`;
+          console.log(`✅ CV stored locally. URL: ${cvUrl}`);
+        }
         
-        console.log(`✅ CV processed: ${cvFile.filename} (${cvFile.size} bytes)`);
-        console.log(`� CV URL: ${cvUrl}`);
+        console.log(`📄 CV processed successfully: ${cvFile.filename} (${cvFile.size} bytes)`);
       } else {
         console.log('ℹ️ No CV file uploaded');
       }
@@ -614,6 +634,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // File download/view endpoint for uploaded CVs
   app.get("/api/files/:filename", async (req, res) => {
+    if (useGoogleDrive) {
+      return res.status(404).json({ 
+        error: "Files are stored in Google Drive", 
+        details: "This endpoint is only available when using local file storage." 
+      });
+    }
     try {
       const filename = req.params.filename;
       
