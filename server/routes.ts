@@ -317,7 +317,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Storage type:", storage.constructor.name);
       console.error("=== END ERROR ===");
       
-      res.status(500).json({ 
+      // Provide detailed error information for debugging
+      const errorDetails: any = {
         error: "Failed to fetch jobs",
         message: error?.message || "Unknown error",
         storageType: storage.constructor.name,
@@ -326,7 +327,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           serviceAccount: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
           privateKey: !!process.env.GOOGLE_PRIVATE_KEY
         }
-      });
+      };
+
+      // Add more diagnostic info if it's a Google Sheets error
+      if (error?.message?.includes('OpenSSL') || error?.code === 'ERR_OSSL_UNSUPPORTED') {
+        errorDetails.diagnosis = 'Private key format error';
+        errorDetails.solution = 'Check GOOGLE_PRIVATE_KEY format in Vercel - should be single line with \\n';
+      } else if (error?.message?.includes('permission') || error?.code === 403) {
+        errorDetails.diagnosis = 'Permission denied';
+        errorDetails.solution = 'Ensure service account has Editor access to Google Sheet';
+      } else if (error?.message?.includes('not found') || error?.code === 404) {
+        errorDetails.diagnosis = 'Spreadsheet not found';
+        errorDetails.solution = 'Verify GOOGLE_SHEET_ID is correct';
+      }
+
+      // Include error code if available
+      if (error?.code) {
+        errorDetails.errorCode = error.code;
+      }
+
+      // Include status if it's an HTTP error
+      if (error?.response?.status) {
+        errorDetails.httpStatus = error.response.status;
+        errorDetails.httpStatusText = error.response.statusText;
+      }
+
+      res.status(500).json(errorDetails);
     }
   });
 
