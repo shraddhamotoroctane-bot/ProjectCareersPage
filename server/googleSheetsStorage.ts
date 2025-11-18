@@ -126,42 +126,101 @@ export class GoogleSheetsStorage implements IStorage {
       console.log('🔍 [DEBUG] All environment variables present, creating JWT auth...');
       
       // Process private key - handle multiple formats and edge cases
+      // Vercel can store keys in various formats, so we need to be very robust
       let processedKey = privateKey;
       
-      // Step 1: Handle escaped newlines (common in environment variables)
+      console.log('🔍 [DEBUG] Original private key analysis:', {
+        length: privateKey.length,
+        hasBackslashN: privateKey.includes('\\n'),
+        hasActualNewline: privateKey.includes('\n'),
+        hasCarriageReturn: privateKey.includes('\r'),
+        first50Chars: privateKey.substring(0, 50),
+        last50Chars: privateKey.substring(Math.max(0, privateKey.length - 50))
+      });
+      
+      // Step 1: Remove any surrounding quotes (JSON might have them)
+      processedKey = processedKey.replace(/^["']|["']$/g, '');
+      
+      // Step 2: Handle escaped newlines (common in environment variables)
+      // Try multiple patterns: \\n, \\r\\n, etc.
       if (processedKey.includes('\\n')) {
         console.log('🔍 [DEBUG] Private key contains escaped newlines (\\n), replacing...');
         processedKey = processedKey.replace(/\\n/g, '\n');
       }
+      if (processedKey.includes('\\r')) {
+        console.log('🔍 [DEBUG] Private key contains escaped carriage returns (\\r), replacing...');
+        processedKey = processedKey.replace(/\\r/g, '\r');
+      }
+      if (processedKey.includes('\\r\\n')) {
+        processedKey = processedKey.replace(/\\r\\n/g, '\n');
+      }
       
-      // Step 2: Handle if key is stored as a single line (replace spaces with newlines in base64 sections)
-      // But only if it doesn't already have newlines
+      // Step 3: Normalize line endings (handle Windows \r\n and Unix \n)
+      processedKey = processedKey.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      
+      // Step 4: Handle if key is stored as a single line (no newlines at all)
       if (!processedKey.includes('\n') && processedKey.length > 100) {
         console.log('🔍 [DEBUG] Private key appears to be single-line, attempting to format...');
-        // Try to insert newlines after BEGIN marker and before END marker
-        processedKey = processedKey.replace(
-          /-----BEGIN PRIVATE KEY-----(.+?)-----END PRIVATE KEY-----/s,
-          (match, content) => {
-            // Insert newline every 64 characters (standard PEM format)
-            const formattedContent = content.trim().replace(/(.{64})/g, '$1\n').trim();
-            return `-----BEGIN PRIVATE KEY-----\n${formattedContent}\n-----END PRIVATE KEY-----`;
-          }
-        );
+        // Extract the base64 content between markers
+        const beginMatch = processedKey.match(/-----BEGIN PRIVATE KEY-----(.+?)-----END PRIVATE KEY-----/s);
+        if (beginMatch && beginMatch[1]) {
+          const content = beginMatch[1].trim();
+          // Remove any spaces and insert newlines every 64 characters (standard PEM format)
+          const cleanedContent = content.replace(/\s/g, '');
+          const formattedContent = cleanedContent.match(/.{1,64}/g)?.join('\n') || cleanedContent;
+          processedKey = `-----BEGIN PRIVATE KEY-----\n${formattedContent}\n-----END PRIVATE KEY-----`;
+          console.log('🔍 [DEBUG] Formatted single-line key, new length:', processedKey.length);
+        }
       }
       
-      // Step 3: Clean up the key - remove leading/trailing whitespace but preserve internal structure
+      // Step 5: Clean up the key - remove leading/trailing whitespace but preserve internal structure
       processedKey = processedKey.trim();
       
-      // Step 4: Ensure proper newlines after BEGIN and before END
-      if (!processedKey.startsWith('-----BEGIN PRIVATE KEY-----\n')) {
-        processedKey = processedKey.replace(/-----BEGIN PRIVATE KEY-----/, '-----BEGIN PRIVATE KEY-----\n');
-      }
-      if (!processedKey.endsWith('\n-----END PRIVATE KEY-----')) {
-        processedKey = processedKey.replace(/-----END PRIVATE KEY-----$/, '\n-----END PRIVATE KEY-----');
+      // Step 6: Ensure proper newlines after BEGIN and before END markers
+      // Remove any spaces/newlines immediately after BEGIN
+      processedKey = processedKey.replace(/-----BEGIN PRIVATE KEY-----\s*/, '-----BEGIN PRIVATE KEY-----\n');
+      // Remove any spaces/newlines immediately before END
+      processedKey = processedKey.replace(/\s*-----END PRIVATE KEY-----/, '\n-----END PRIVATE KEY-----');
+      
+      // Step 7: Clean up the base64 content - ensure proper line breaks
+      // Split into lines and clean each line
+      const lines = processedKey.split('\n');
+      const cleanedLines: string[] = [];
+      let inKeyContent = false;
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed === '-----BEGIN PRIVATE KEY-----') {
+          cleanedLines.push(trimmed);
+          inKeyContent = true;
+        } else if (trimmed === '-----END PRIVATE KEY-----') {
+          inKeyContent = false;
+          cleanedLines.push(trimmed);
+        } else if (inKeyContent && trimmed) {
+          // Remove any spaces from base64 lines and ensure they're not too long
+          const cleaned = trimmed.replace(/\s/g, '');
+          if (cleaned.length > 0) {
+            // Split long lines into 64-char chunks (PEM standard)
+            if (cleaned.length > 64) {
+              for (let i = 0; i < cleaned.length; i += 64) {
+                cleanedLines.push(cleaned.substring(i, i + 64));
+              }
+            } else {
+              cleanedLines.push(cleaned);
+            }
+          }
+        } else if (!inKeyContent && trimmed) {
+          cleanedLines.push(trimmed);
+        }
       }
       
-      // Step 5: Remove any extra blank lines
+      processedKey = cleanedLines.join('\n');
+      
+      // Step 8: Remove any extra blank lines (more than 2 consecutive)
       processedKey = processedKey.replace(/\n{3,}/g, '\n\n');
+      
+      // Step 9: Final trim
+      processedKey = processedKey.trim();
       
       console.log('🔍 [DEBUG] Private key processing:', {
         originalLength: privateKey.length,
@@ -198,35 +257,67 @@ export class GoogleSheetsStorage implements IStorage {
       console.log('🔍 [DEBUG] Creating JWT auth object...');
       
       let auth;
-      try {
-        auth = new google.auth.JWT({
-          email: serviceAccountEmail,
-          key: processedKey,
-          scopes: ['https://www.googleapis.com/auth/spreadsheets']
-        });
-        console.log('✅ [DEBUG] JWT auth object created successfully');
-      } catch (jwtError: any) {
-        console.error('❌ [DEBUG] Failed to create JWT auth object:', {
-          error: jwtError?.message,
-          code: jwtError?.code,
-          opensslError: jwtError?.opensslErrorStack,
-          library: jwtError?.library,
-          reason: jwtError?.reason
+      let lastError: any = null;
+      
+      // Try multiple approaches to create the JWT auth
+      const approaches = [
+        { name: 'Direct processed key', key: processedKey },
+        { name: 'Key with normalized newlines', key: processedKey.replace(/\r\n/g, '\n') },
+        { name: 'Key without trailing newline', key: processedKey.trimEnd() },
+      ];
+      
+      for (const approach of approaches) {
+        try {
+          console.log(`🔍 [DEBUG] Trying approach: ${approach.name}...`);
+          auth = new google.auth.JWT({
+            email: serviceAccountEmail,
+            key: approach.key,
+            scopes: ['https://www.googleapis.com/auth/spreadsheets']
+          });
+          console.log(`✅ [DEBUG] JWT auth object created successfully using: ${approach.name}`);
+          break; // Success, exit loop
+        } catch (jwtError: any) {
+          lastError = jwtError;
+          console.log(`❌ [DEBUG] Approach "${approach.name}" failed:`, {
+            error: jwtError?.message?.substring(0, 100),
+            code: jwtError?.code
+          });
+          
+          // If it's not an OpenSSL error, don't try other approaches
+          if (jwtError?.code !== 'ERR_OSSL_UNSUPPORTED' && !jwtError?.opensslErrorStack) {
+            break;
+          }
+        }
+      }
+      
+      // If all approaches failed, throw with detailed error
+      if (!auth) {
+        console.error('❌ [DEBUG] All approaches failed to create JWT auth object');
+        console.error('❌ [DEBUG] Final error details:', {
+          error: lastError?.message,
+          code: lastError?.code,
+          opensslError: lastError?.opensslErrorStack,
+          library: lastError?.library,
+          reason: lastError?.reason,
+          processedKeyLength: processedKey.length,
+          processedKeyPreview: processedKey.substring(0, 100) + '...' + processedKey.substring(processedKey.length - 50)
         });
         
         // Provide helpful error message
-        if (jwtError?.code === 'ERR_OSSL_UNSUPPORTED' || jwtError?.opensslErrorStack) {
+        if (lastError?.code === 'ERR_OSSL_UNSUPPORTED' || lastError?.opensslErrorStack) {
           throw new Error(
-            'Private key format error: The private key cannot be decoded. ' +
+            'Private key format error: The private key cannot be decoded by OpenSSL. ' +
             'This usually means:\n' +
-            '1. The key has incorrect newline formatting\n' +
+            '1. The key has incorrect newline formatting in Vercel\n' +
             '2. The key is corrupted or truncated\n' +
-            '3. The key format is not supported\n\n' +
-            'Original error: ' + jwtError?.message + '\n' +
-            'Try: Ensure the key includes both BEGIN and END markers and proper newlines.'
+            '3. The key format is not supported by the Node.js version\n\n' +
+            'Original error: ' + lastError?.message + '\n\n' +
+            'SOLUTION: In Vercel, try pasting the key as a SINGLE LINE with escaped newlines:\n' +
+            'Replace all actual newlines with \\n (backslash-n) and paste as one line.\n' +
+            'Example: -----BEGIN PRIVATE KEY-----\\nMIIE...\\n-----END PRIVATE KEY-----\\n'
           );
         }
-        throw jwtError;
+        throw lastError;
       }
       
       console.log('🔍 [DEBUG] JWT auth object created, initializing Google Sheets API client...');
