@@ -151,6 +151,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint for Google Sheets troubleshooting
+  app.get("/api/debug/google-sheets", async (req, res) => {
+    console.log('🔍 [DEBUG] ========== /api/debug/google-sheets called ==========');
+    const debugInfo: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "unknown",
+      platform: process.platform,
+      nodeVersion: process.version,
+    };
+
+    try {
+      // Environment variable analysis
+      debugInfo.environmentVariables = {
+        GOOGLE_SHEET_ID: {
+          exists: !!process.env.GOOGLE_SHEET_ID,
+          length: process.env.GOOGLE_SHEET_ID?.length || 0,
+          preview: process.env.GOOGLE_SHEET_ID ? process.env.GOOGLE_SHEET_ID.substring(0, 30) + '...' : 'NOT SET',
+          value: process.env.GOOGLE_SHEET_ID || 'NOT SET',
+          isValid: !!process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_SHEET_ID.length > 10
+        },
+        GOOGLE_SERVICE_ACCOUNT_EMAIL: {
+          exists: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+          length: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.length || 0,
+          preview: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.substring(0, 30) + '...' : 'NOT SET',
+          value: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 'NOT SET',
+          containsAt: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.includes('@') || false,
+          endsWithServiceAccount: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.endsWith('.iam.gserviceaccount.com') || false,
+          isValid: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.includes('@')
+        },
+        GOOGLE_PRIVATE_KEY: {
+          exists: !!process.env.GOOGLE_PRIVATE_KEY,
+          length: process.env.GOOGLE_PRIVATE_KEY?.length || 0,
+          startsWith: process.env.GOOGLE_PRIVATE_KEY?.startsWith('-----BEGIN PRIVATE KEY-----') || false,
+          endsWith: process.env.GOOGLE_PRIVATE_KEY?.endsWith('-----END PRIVATE KEY-----') || false,
+          containsEscapedNewlines: process.env.GOOGLE_PRIVATE_KEY?.includes('\\n') || false,
+          containsActualNewlines: process.env.GOOGLE_PRIVATE_KEY?.includes('\n') || false,
+          firstChars: process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.substring(0, 50) : 'NOT SET',
+          lastChars: process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.substring(Math.max(0, (process.env.GOOGLE_PRIVATE_KEY.length - 50))) : 'NOT SET',
+          isValid: !!process.env.GOOGLE_PRIVATE_KEY && 
+                   process.env.GOOGLE_PRIVATE_KEY.startsWith('-----BEGIN PRIVATE KEY-----') &&
+                   process.env.GOOGLE_PRIVATE_KEY.endsWith('-----END PRIVATE KEY-----')
+        }
+      };
+
+      // Storage type analysis
+      debugInfo.storage = {
+        type: storage.constructor.name,
+        isGoogleSheets: storage.constructor.name === "GoogleSheetsStorage",
+        isMemory: storage.constructor.name === "MemoryStorage"
+      };
+
+      // If using GoogleSheetsStorage, try to get internal state
+      if (storage.constructor.name === "GoogleSheetsStorage") {
+        try {
+          // Access private properties via type assertion for debugging
+          const gsStorage = storage as any;
+          
+          debugInfo.googleSheetsStorage = {
+            spreadsheetId: gsStorage.spreadsheetId || 'NOT SET',
+            initialized: gsStorage.initialized || false,
+            sheetsClientExists: !!gsStorage.sheets,
+            sheetsClientType: gsStorage.sheets ? gsStorage.sheets.constructor.name : 'null'
+          };
+
+          // Try to test connection
+          console.log('🔍 [DEBUG] Testing Google Sheets connection...');
+          try {
+            const testJobs = await storage.getAllJobs();
+            debugInfo.connectionTest = {
+              success: true,
+              jobsCount: testJobs.length,
+              message: 'Successfully connected and fetched jobs'
+            };
+          } catch (testError: any) {
+            debugInfo.connectionTest = {
+              success: false,
+              error: testError?.message || String(testError),
+              errorType: testError?.constructor?.name || typeof testError,
+              errorCode: testError?.code,
+              errorStatus: testError?.status || testError?.response?.status,
+              errorDetails: testError?.response?.data || null
+            };
+          }
+        } catch (error: any) {
+          debugInfo.googleSheetsStorage = {
+            error: 'Could not inspect GoogleSheetsStorage internals',
+            errorMessage: error?.message || String(error)
+          };
+        }
+      }
+
+      // Summary
+      debugInfo.summary = {
+        allEnvVarsPresent: 
+          !!process.env.GOOGLE_SHEET_ID && 
+          !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && 
+          !!process.env.GOOGLE_PRIVATE_KEY,
+        usingCorrectStorage: storage.constructor.name === "GoogleSheetsStorage",
+        connectionWorking: debugInfo.connectionTest?.success || false,
+        recommendations: []
+      };
+
+      // Add recommendations
+      if (!debugInfo.environmentVariables.GOOGLE_SHEET_ID.exists) {
+        debugInfo.summary.recommendations.push('GOOGLE_SHEET_ID is missing - set it in Vercel environment variables');
+      }
+      if (!debugInfo.environmentVariables.GOOGLE_SERVICE_ACCOUNT_EMAIL.exists) {
+        debugInfo.summary.recommendations.push('GOOGLE_SERVICE_ACCOUNT_EMAIL is missing - set it in Vercel environment variables');
+      }
+      if (!debugInfo.environmentVariables.GOOGLE_PRIVATE_KEY.exists) {
+        debugInfo.summary.recommendations.push('GOOGLE_PRIVATE_KEY is missing - set it in Vercel environment variables');
+      }
+      if (debugInfo.environmentVariables.GOOGLE_PRIVATE_KEY.exists && !debugInfo.environmentVariables.GOOGLE_PRIVATE_KEY.isValid) {
+        debugInfo.summary.recommendations.push('GOOGLE_PRIVATE_KEY format appears invalid - ensure it includes BEGIN and END markers');
+      }
+      if (storage.constructor.name === "MemoryStorage") {
+        debugInfo.summary.recommendations.push('Using MemoryStorage instead of GoogleSheetsStorage - check environment variables');
+      }
+      if (debugInfo.connectionTest && !debugInfo.connectionTest.success) {
+        debugInfo.summary.recommendations.push(`Connection test failed: ${debugInfo.connectionTest.error} - check service account permissions`);
+      }
+
+      console.log('✅ [DEBUG] Debug info collected successfully');
+      res.json(debugInfo);
+    } catch (error: any) {
+      console.error('❌ [DEBUG] Error in debug endpoint:', error);
+      res.status(500).json({
+        error: 'Failed to collect debug information',
+        message: error?.message || String(error),
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Job Routes
   
   // Get all active jobs

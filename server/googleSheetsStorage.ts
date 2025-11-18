@@ -35,39 +35,252 @@ export class GoogleSheetsStorage implements IStorage {
   private initialized: boolean = false;
   
   constructor() {
+    console.log('🔍 [DEBUG] GoogleSheetsStorage constructor called');
+    console.log('🔍 [DEBUG] Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      hasGOOGLE_SHEET_ID: !!process.env.GOOGLE_SHEET_ID,
+      hasGOOGLE_SERVICE_ACCOUNT_EMAIL: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      hasGOOGLE_PRIVATE_KEY: !!process.env.GOOGLE_PRIVATE_KEY,
+      GOOGLE_SHEET_ID_length: process.env.GOOGLE_SHEET_ID?.length || 0,
+      GOOGLE_SERVICE_ACCOUNT_EMAIL_length: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.length || 0,
+      GOOGLE_PRIVATE_KEY_length: process.env.GOOGLE_PRIVATE_KEY?.length || 0,
+      GOOGLE_PRIVATE_KEY_startsWith: process.env.GOOGLE_PRIVATE_KEY?.substring(0, 30) || 'NOT SET'
+    });
+    
     this.spreadsheetId = process.env.GOOGLE_SHEET_ID!;
+    
+    if (!this.spreadsheetId) {
+      console.error('❌ [DEBUG] GOOGLE_SHEET_ID is missing or empty');
+    } else {
+      console.log('✅ [DEBUG] GOOGLE_SHEET_ID set:', this.spreadsheetId.substring(0, 20) + '...');
+    }
   }
 
   private async ensureInitialized() {
+    console.log('🔍 [DEBUG] ensureInitialized called, initialized:', this.initialized);
     if (!this.initialized) {
+      console.log('🔍 [DEBUG] Not initialized, calling initializeSheets...');
       await this.initializeSheets();
       this.initialized = true;
+      console.log('✅ [DEBUG] Initialization complete, initialized flag set to true');
+    } else {
+      console.log('✅ [DEBUG] Already initialized, skipping');
     }
   }
 
   private async initializeSheets() {
+    console.log('🔍 [DEBUG] ========== initializeSheets START ==========');
+    console.log('🔍 [DEBUG] Timestamp:', new Date().toISOString());
+    console.log('🔍 [DEBUG] Environment:', process.env.NODE_ENV);
+    
     try {
-      // Get environment variables
+      // Get environment variables with detailed logging
       const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
       const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+      const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-      if (!serviceAccountEmail || !privateKey) {
-        throw new Error('Missing Google Sheets credentials. Please set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY environment variables.');
-      }
-
-      // Create JWT auth from service account credentials
-      const auth = new google.auth.JWT({
-        email: serviceAccountEmail,
-        key: privateKey.replace(/\\n/g, '\n'),
-        scopes: ['https://www.googleapis.com/auth/spreadsheets']
+      console.log('🔍 [DEBUG] Environment variable validation:');
+      console.log('🔍 [DEBUG] - GOOGLE_SHEET_ID:', {
+        exists: !!spreadsheetId,
+        length: spreadsheetId?.length || 0,
+        value_preview: spreadsheetId ? spreadsheetId.substring(0, 30) + '...' : 'NOT SET',
+        isString: typeof spreadsheetId === 'string'
       });
       
+      console.log('🔍 [DEBUG] - GOOGLE_SERVICE_ACCOUNT_EMAIL:', {
+        exists: !!serviceAccountEmail,
+        length: serviceAccountEmail?.length || 0,
+        value_preview: serviceAccountEmail ? serviceAccountEmail.substring(0, 30) + '...' : 'NOT SET',
+        isString: typeof serviceAccountEmail === 'string',
+        containsAt: serviceAccountEmail?.includes('@') || false,
+        endsWith: serviceAccountEmail?.endsWith('.iam.gserviceaccount.com') || false
+      });
+      
+      console.log('🔍 [DEBUG] - GOOGLE_PRIVATE_KEY:', {
+        exists: !!privateKey,
+        length: privateKey?.length || 0,
+        startsWith: privateKey?.startsWith('-----BEGIN PRIVATE KEY-----') || false,
+        endsWith: privateKey?.endsWith('-----END PRIVATE KEY-----') || false,
+        containsNewlines: privateKey?.includes('\\n') || false,
+        containsActualNewlines: privateKey?.includes('\n') || false,
+        firstChars: privateKey ? privateKey.substring(0, 50) : 'NOT SET',
+        lastChars: privateKey ? privateKey.substring(Math.max(0, privateKey.length - 50)) : 'NOT SET'
+      });
+
+      if (!spreadsheetId) {
+        const error = 'Missing GOOGLE_SHEET_ID environment variable';
+        console.error('❌ [DEBUG]', error);
+        throw new Error(error);
+      }
+
+      if (!serviceAccountEmail || !privateKey) {
+        const error = 'Missing Google Sheets credentials. Please set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY environment variables.';
+        console.error('❌ [DEBUG]', error);
+        console.error('❌ [DEBUG] Missing:', {
+          serviceAccountEmail: !serviceAccountEmail,
+          privateKey: !privateKey
+        });
+        throw new Error(error);
+      }
+
+      console.log('🔍 [DEBUG] All environment variables present, creating JWT auth...');
+      
+      // Process private key - handle multiple formats and edge cases
+      let processedKey = privateKey;
+      
+      // Step 1: Handle escaped newlines (common in environment variables)
+      if (processedKey.includes('\\n')) {
+        console.log('🔍 [DEBUG] Private key contains escaped newlines (\\n), replacing...');
+        processedKey = processedKey.replace(/\\n/g, '\n');
+      }
+      
+      // Step 2: Handle if key is stored as a single line (replace spaces with newlines in base64 sections)
+      // But only if it doesn't already have newlines
+      if (!processedKey.includes('\n') && processedKey.length > 100) {
+        console.log('🔍 [DEBUG] Private key appears to be single-line, attempting to format...');
+        // Try to insert newlines after BEGIN marker and before END marker
+        processedKey = processedKey.replace(
+          /-----BEGIN PRIVATE KEY-----(.+?)-----END PRIVATE KEY-----/s,
+          (match, content) => {
+            // Insert newline every 64 characters (standard PEM format)
+            const formattedContent = content.trim().replace(/(.{64})/g, '$1\n').trim();
+            return `-----BEGIN PRIVATE KEY-----\n${formattedContent}\n-----END PRIVATE KEY-----`;
+          }
+        );
+      }
+      
+      // Step 3: Clean up the key - remove leading/trailing whitespace but preserve internal structure
+      processedKey = processedKey.trim();
+      
+      // Step 4: Ensure proper newlines after BEGIN and before END
+      if (!processedKey.startsWith('-----BEGIN PRIVATE KEY-----\n')) {
+        processedKey = processedKey.replace(/-----BEGIN PRIVATE KEY-----/, '-----BEGIN PRIVATE KEY-----\n');
+      }
+      if (!processedKey.endsWith('\n-----END PRIVATE KEY-----')) {
+        processedKey = processedKey.replace(/-----END PRIVATE KEY-----$/, '\n-----END PRIVATE KEY-----');
+      }
+      
+      // Step 5: Remove any extra blank lines
+      processedKey = processedKey.replace(/\n{3,}/g, '\n\n');
+      
+      console.log('🔍 [DEBUG] Private key processing:', {
+        originalLength: privateKey.length,
+        processedLength: processedKey.length,
+        hasActualNewlines: processedKey.includes('\n'),
+        startsWithCorrect: processedKey.trimStart().startsWith('-----BEGIN PRIVATE KEY-----'),
+        endsWithCorrect: processedKey.trimEnd().endsWith('-----END PRIVATE KEY-----'),
+        firstLine: processedKey.split('\n')[0],
+        lastLine: processedKey.split('\n').slice(-1)[0]
+      });
+      
+      // Step 6: Validate the key format before attempting to use it
+      if (!processedKey.trimStart().startsWith('-----BEGIN PRIVATE KEY-----')) {
+        throw new Error('Invalid private key format: Missing BEGIN marker. Ensure the key starts with -----BEGIN PRIVATE KEY-----');
+      }
+      
+      if (!processedKey.trimEnd().endsWith('-----END PRIVATE KEY-----')) {
+        throw new Error('Invalid private key format: Missing END marker. Ensure the key ends with -----END PRIVATE KEY-----');
+      }
+      
+      // Step 7: Try to validate it's a valid PEM format
+      const keyContent = processedKey
+        .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+        .replace(/-----END PRIVATE KEY-----/g, '')
+        .replace(/\s/g, '');
+      
+      if (keyContent.length < 100) {
+        throw new Error('Invalid private key format: Key content appears to be too short or corrupted');
+      }
+      
+      console.log('✅ [DEBUG] Private key format validated successfully');
+
+      // Create JWT auth from service account credentials
+      console.log('🔍 [DEBUG] Creating JWT auth object...');
+      
+      let auth;
+      try {
+        auth = new google.auth.JWT({
+          email: serviceAccountEmail,
+          key: processedKey,
+          scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        });
+        console.log('✅ [DEBUG] JWT auth object created successfully');
+      } catch (jwtError: any) {
+        console.error('❌ [DEBUG] Failed to create JWT auth object:', {
+          error: jwtError?.message,
+          code: jwtError?.code,
+          opensslError: jwtError?.opensslErrorStack,
+          library: jwtError?.library,
+          reason: jwtError?.reason
+        });
+        
+        // Provide helpful error message
+        if (jwtError?.code === 'ERR_OSSL_UNSUPPORTED' || jwtError?.opensslErrorStack) {
+          throw new Error(
+            'Private key format error: The private key cannot be decoded. ' +
+            'This usually means:\n' +
+            '1. The key has incorrect newline formatting\n' +
+            '2. The key is corrupted or truncated\n' +
+            '3. The key format is not supported\n\n' +
+            'Original error: ' + jwtError?.message + '\n' +
+            'Try: Ensure the key includes both BEGIN and END markers and proper newlines.'
+          );
+        }
+        throw jwtError;
+      }
+      
+      console.log('🔍 [DEBUG] JWT auth object created, initializing Google Sheets API client...');
       this.sheets = google.sheets({ version: 'v4', auth });
-      console.log('Google Sheets authentication successful');
-    } catch (error) {
-      console.error('Failed to initialize Google Sheets:', error);
+      
+      console.log('✅ [DEBUG] Google Sheets API client initialized');
+      console.log('🔍 [DEBUG] Testing authentication by checking spreadsheet access...');
+      
+      // Test authentication by attempting to read spreadsheet metadata
+      try {
+        const testResponse = await this.sheets.spreadsheets.get({
+          spreadsheetId: spreadsheetId,
+        });
+        console.log('✅ [DEBUG] Authentication successful - spreadsheet accessible');
+        console.log('🔍 [DEBUG] Spreadsheet title:', testResponse.data.properties?.title || 'Unknown');
+        console.log('🔍 [DEBUG] Spreadsheet ID verified:', testResponse.data.spreadsheetId === spreadsheetId);
+      } catch (authError: any) {
+        console.error('❌ [DEBUG] Authentication test failed:', {
+          message: authError?.message,
+          code: authError?.code,
+          status: authError?.response?.status,
+          statusText: authError?.response?.statusText,
+          errorDetails: authError?.response?.data
+        });
+        throw authError;
+      }
+      
+      console.log('✅ [DEBUG] Google Sheets authentication successful');
+      console.log('🔍 [DEBUG] ========== initializeSheets SUCCESS ==========');
+    } catch (error: any) {
+      console.error('❌ [DEBUG] ========== initializeSheets FAILED ==========');
+      console.error('❌ [DEBUG] Error type:', error?.constructor?.name || typeof error);
+      console.error('❌ [DEBUG] Error message:', error?.message || String(error));
+      console.error('❌ [DEBUG] Error code:', error?.code);
+      console.error('❌ [DEBUG] Error status:', error?.status || error?.response?.status);
+      console.error('❌ [DEBUG] Error statusText:', error?.statusText || error?.response?.statusText);
+      console.error('❌ [DEBUG] Error stack:', error?.stack);
+      
+      if (error?.response?.data) {
+        console.error('❌ [DEBUG] Error response data:', JSON.stringify(error.response.data, null, 2));
+      }
+      
+      if (error?.config) {
+        console.error('❌ [DEBUG] Request config:', {
+          url: error.config.url,
+          method: error.config.method,
+          headers: Object.keys(error.config.headers || {})
+        });
+      }
+      
+      console.error('❌ [DEBUG] Failed to initialize Google Sheets:', error);
       // Fall back to returning empty data if authentication fails
       this.sheets = null;
+      console.error('❌ [DEBUG] ========== initializeSheets END (FAILED) ==========');
     }
   }
 
@@ -290,30 +503,89 @@ export class GoogleSheetsStorage implements IStorage {
 
   // Helper method to read sheet data
   private async readSheet(range: string): Promise<any[][]> {
+    console.log('🔍 [DEBUG] ========== readSheet START ==========');
+    console.log('🔍 [DEBUG] Range:', range);
+    console.log('🔍 [DEBUG] Spreadsheet ID:', this.spreadsheetId);
+    console.log('🔍 [DEBUG] Initialized:', this.initialized);
+    console.log('🔍 [DEBUG] Sheets client exists:', !!this.sheets);
+    
     await this.ensureInitialized();
+    
     if (!this.sheets) {
       const errorMsg = 'Google Sheets not initialized - check credentials';
-      console.error(errorMsg);
+      console.error('❌ [DEBUG]', errorMsg);
+      console.error('❌ [DEBUG] Sheets client is null - initialization likely failed');
       throw new Error(errorMsg);
     }
+    
     try {
+      console.log('🔍 [DEBUG] Making API call to read sheet...');
+      console.log('🔍 [DEBUG] Request params:', {
+        spreadsheetId: this.spreadsheetId,
+        range: range
+      });
+      
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
         range: range,
       });
-      return response.data.values || [];
+      
+      console.log('✅ [DEBUG] API call successful');
+      console.log('🔍 [DEBUG] Response structure:', {
+        hasData: !!response.data,
+        hasValues: !!response.data?.values,
+        valuesLength: response.data?.values?.length || 0,
+        firstRowLength: response.data?.values?.[0]?.length || 0
+      });
+      
+      const result = response.data.values || [];
+      console.log('✅ [DEBUG] Returning', result.length, 'rows');
+      console.log('🔍 [DEBUG] ========== readSheet SUCCESS ==========');
+      return result;
     } catch (error: any) {
+      console.error('❌ [DEBUG] ========== readSheet FAILED ==========');
+      console.error('❌ [DEBUG] Error reading sheet range:', range);
+      console.error('❌ [DEBUG] Error type:', error?.constructor?.name || typeof error);
+      console.error('❌ [DEBUG] Error message:', error?.message || String(error));
+      console.error('❌ [DEBUG] Error code:', error?.code);
+      console.error('❌ [DEBUG] Error status:', error?.status || error?.response?.status);
+      console.error('❌ [DEBUG] Error statusText:', error?.statusText || error?.response?.statusText);
+      
+      if (error?.response?.data) {
+        console.error('❌ [DEBUG] Error response data:', JSON.stringify(error.response.data, null, 2));
+      }
+      
+      if (error?.config) {
+        console.error('❌ [DEBUG] Request config:', {
+          url: error.config.url,
+          method: error.config.method
+        });
+      }
+      
       const errorMsg = `Error reading sheet range ${range}: ${error?.message || error}`;
-      console.error(errorMsg);
-      console.error('Full error:', error);
+      console.error('❌ [DEBUG] Full error:', error);
+      console.error('❌ [DEBUG] ========== readSheet END (FAILED) ==========');
       throw new Error(errorMsg);
     }
   }
 
   // Helper method to append data to sheet
   private async appendToSheet(range: string, values: any[][]): Promise<void> {
+    console.log('🔍 [DEBUG] ========== appendToSheet START ==========');
+    console.log('🔍 [DEBUG] Range:', range);
+    console.log('🔍 [DEBUG] Values count:', values.length);
+    console.log('🔍 [DEBUG] First row preview:', values[0]?.slice(0, 3));
+    
     await this.ensureInitialized();
+    
+    if (!this.sheets) {
+      const errorMsg = 'Google Sheets not initialized - check credentials';
+      console.error('❌ [DEBUG]', errorMsg);
+      throw new Error(errorMsg);
+    }
+    
     try {
+      console.log('🔍 [DEBUG] Making API call to append to sheet...');
       await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: range,
@@ -322,15 +594,40 @@ export class GoogleSheetsStorage implements IStorage {
           values: values,
         },
       });
-    } catch (error) {
-      console.error(`Error appending to sheet range ${range}:`, error);
+      console.log('✅ [DEBUG] Append successful');
+      console.log('🔍 [DEBUG] ========== appendToSheet SUCCESS ==========');
+    } catch (error: any) {
+      console.error('❌ [DEBUG] ========== appendToSheet FAILED ==========');
+      console.error('❌ [DEBUG] Error appending to sheet range:', range);
+      console.error('❌ [DEBUG] Error type:', error?.constructor?.name || typeof error);
+      console.error('❌ [DEBUG] Error message:', error?.message || String(error));
+      console.error('❌ [DEBUG] Error code:', error?.code);
+      console.error('❌ [DEBUG] Error status:', error?.status || error?.response?.status);
+      if (error?.response?.data) {
+        console.error('❌ [DEBUG] Error response data:', JSON.stringify(error.response.data, null, 2));
+      }
+      console.error('❌ [DEBUG] ========== appendToSheet END (FAILED) ==========');
+      throw error;
     }
   }
 
   // Helper method to update sheet data
   private async updateSheet(range: string, values: any[][]): Promise<void> {
+    console.log('🔍 [DEBUG] ========== updateSheet START ==========');
+    console.log('🔍 [DEBUG] Range:', range);
+    console.log('🔍 [DEBUG] Values count:', values.length);
+    console.log('🔍 [DEBUG] First row preview:', values[0]?.slice(0, 3));
+    
     await this.ensureInitialized();
+    
+    if (!this.sheets) {
+      const errorMsg = 'Google Sheets not initialized - check credentials';
+      console.error('❌ [DEBUG]', errorMsg);
+      throw new Error(errorMsg);
+    }
+    
     try {
+      console.log('🔍 [DEBUG] Making API call to update sheet...');
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: range,
@@ -339,8 +636,20 @@ export class GoogleSheetsStorage implements IStorage {
           values: values,
         },
       });
-    } catch (error) {
-      console.error(`Error updating sheet range ${range}:`, error);
+      console.log('✅ [DEBUG] Update successful');
+      console.log('🔍 [DEBUG] ========== updateSheet SUCCESS ==========');
+    } catch (error: any) {
+      console.error('❌ [DEBUG] ========== updateSheet FAILED ==========');
+      console.error('❌ [DEBUG] Error updating sheet range:', range);
+      console.error('❌ [DEBUG] Error type:', error?.constructor?.name || typeof error);
+      console.error('❌ [DEBUG] Error message:', error?.message || String(error));
+      console.error('❌ [DEBUG] Error code:', error?.code);
+      console.error('❌ [DEBUG] Error status:', error?.status || error?.response?.status);
+      if (error?.response?.data) {
+        console.error('❌ [DEBUG] Error response data:', JSON.stringify(error.response.data, null, 2));
+      }
+      console.error('❌ [DEBUG] ========== updateSheet END (FAILED) ==========');
+      throw error;
     }
   }
 
@@ -479,37 +788,80 @@ export class GoogleSheetsStorage implements IStorage {
   // Jobs methods
   // Jobs methods
 async getAllJobs(): Promise<Job[]> {
+  console.log('🔍 [DEBUG] ========== getAllJobs START ==========');
+  console.log('🔍 [DEBUG] Timestamp:', new Date().toISOString());
+  console.log('🔍 [DEBUG] Spreadsheet ID:', this.spreadsheetId);
+  console.log('🔍 [DEBUG] Initialized:', this.initialized);
+  console.log('🔍 [DEBUG] Sheets client exists:', !!this.sheets);
+  
   try {
-    console.log('Reading jobs from Google Sheet:', this.spreadsheetId);
+    console.log('🔍 [DEBUG] Reading jobs from Google Sheet:', this.spreadsheetId);
     const rows = await this.readSheet('Jobs!A2:L1000'); // skip header
-    console.log(`Read ${rows.length} rows from Jobs sheet`);
+    console.log(`✅ [DEBUG] Read ${rows.length} rows from Jobs sheet`);
     
     if (rows.length === 0) {
-      console.warn('No jobs found in sheet - sheet might be empty or range is incorrect');
+      console.warn('⚠️ [DEBUG] No jobs found in sheet - sheet might be empty or range is incorrect');
+      console.log('🔍 [DEBUG] This could mean:');
+      console.log('🔍 [DEBUG] 1. Sheet "Jobs" does not exist');
+      console.log('🔍 [DEBUG] 2. Sheet exists but has no data rows');
+      console.log('🔍 [DEBUG] 3. Range A2:L1000 is incorrect');
+      console.log('🔍 [DEBUG] ========== getAllJobs END (EMPTY) ==========');
       return [];
     }
     
+    console.log('🔍 [DEBUG] Processing rows into job objects...');
     const jobs = rows
-      .filter(row => row && row.length > 0 && row[0]) // Filter out empty rows
-      .map(row => ({
-        id: row[0],
-        title: row[1],
-        department: row[2],
-        type: row[3],
-        level: row[4] || null, // Handle missing level gracefully
-        location: row[5],
-        description: row[6],
-        requirements: row[7] ? (typeof row[7] === 'string' ? JSON.parse(row[7]) : row[7]) : [],
-        applicationUrl: row[8],
-        isActive: row[9] === 'TRUE' || row[9] === true,
-        createdAt: new Date(row[10] || Date.now()),
-        updatedAt: new Date(row[11] || Date.now()),
-      }));
+      .filter(row => {
+        const isValid = row && row.length > 0 && row[0];
+        if (!isValid) {
+          console.log('🔍 [DEBUG] Filtered out empty row:', row);
+        }
+        return isValid;
+      })
+      .map((row, index) => {
+        try {
+          const job = {
+            id: row[0],
+            title: row[1],
+            department: row[2],
+            type: row[3],
+            level: row[4] || null, // Handle missing level gracefully
+            location: row[5],
+            description: row[6],
+            requirements: row[7] ? (typeof row[7] === 'string' ? JSON.parse(row[7]) : row[7]) : [],
+            applicationUrl: row[8],
+            isActive: row[9] === 'TRUE' || row[9] === true,
+            createdAt: new Date(row[10] || Date.now()),
+            updatedAt: new Date(row[11] || Date.now()),
+          };
+          
+          if (index < 3) {
+            console.log(`🔍 [DEBUG] Sample job ${index + 1}:`, {
+              id: job.id,
+              title: job.title,
+              isActive: job.isActive
+            });
+          }
+          
+          return job;
+        } catch (parseError: any) {
+          console.error(`❌ [DEBUG] Error parsing row ${index + 2}:`, parseError?.message);
+          console.error('❌ [DEBUG] Row data:', row);
+          throw parseError;
+        }
+      });
     
-    console.log(`Parsed ${jobs.length} jobs from sheet`);
+    console.log(`✅ [DEBUG] Parsed ${jobs.length} jobs from sheet`);
+    console.log('🔍 [DEBUG] Active jobs count:', jobs.filter(j => j.isActive).length);
+    console.log('🔍 [DEBUG] ========== getAllJobs SUCCESS ==========');
     return jobs;
   } catch (error: any) {
-    console.error('Error in getAllJobs:', error);
+    console.error('❌ [DEBUG] ========== getAllJobs FAILED ==========');
+    console.error('❌ [DEBUG] Error in getAllJobs:', error);
+    console.error('❌ [DEBUG] Error type:', error?.constructor?.name || typeof error);
+    console.error('❌ [DEBUG] Error message:', error?.message || String(error));
+    console.error('❌ [DEBUG] Error stack:', error?.stack);
+    console.error('❌ [DEBUG] ========== getAllJobs END (FAILED) ==========');
     throw new Error(`Failed to fetch jobs from Google Sheets: ${error?.message || error}`);
   }
 }
