@@ -256,14 +256,15 @@ export class GoogleSheetsStorage implements IStorage {
       // Create JWT auth from service account credentials
       console.log('🔍 [DEBUG] Creating JWT auth object...');
       
-      let auth;
+      let auth: any;
       let lastError: any = null;
       
-      // Try multiple approaches to create the JWT auth
+      // Try multiple approaches to create the JWT auth with different key formats
       const approaches = [
         { name: 'Direct processed key', key: processedKey },
         { name: 'Key with normalized newlines', key: processedKey.replace(/\r\n/g, '\n') },
         { name: 'Key without trailing newline', key: processedKey.trimEnd() },
+        { name: 'Key without leading/trailing newlines', key: processedKey.trim() },
       ];
       
       for (const approach of approaches) {
@@ -279,12 +280,14 @@ export class GoogleSheetsStorage implements IStorage {
         } catch (jwtError: any) {
           lastError = jwtError;
           console.log(`❌ [DEBUG] Approach "${approach.name}" failed:`, {
-            error: jwtError?.message?.substring(0, 100),
-            code: jwtError?.code
+            error: jwtError?.message?.substring(0, 150),
+            code: jwtError?.code,
+            opensslError: jwtError?.opensslErrorStack?.[0] || 'none'
           });
           
           // If it's not an OpenSSL error, don't try other approaches
           if (jwtError?.code !== 'ERR_OSSL_UNSUPPORTED' && !jwtError?.opensslErrorStack) {
+            console.log('❌ [DEBUG] Non-OpenSSL error, stopping retry attempts');
             break;
           }
         }
@@ -292,7 +295,7 @@ export class GoogleSheetsStorage implements IStorage {
       
       // If all approaches failed, throw with detailed error
       if (!auth) {
-        console.error('❌ [DEBUG] All approaches failed to create JWT auth object');
+        console.error('❌ [DEBUG] All authentication approaches failed');
         console.error('❌ [DEBUG] Final error details:', {
           error: lastError?.message,
           code: lastError?.code,
@@ -300,27 +303,30 @@ export class GoogleSheetsStorage implements IStorage {
           library: lastError?.library,
           reason: lastError?.reason,
           processedKeyLength: processedKey.length,
-          processedKeyPreview: processedKey.substring(0, 100) + '...' + processedKey.substring(processedKey.length - 50)
+          processedKeyFirstChars: processedKey.substring(0, 80),
+          processedKeyLastChars: processedKey.substring(Math.max(0, processedKey.length - 80))
         });
         
         // Provide helpful error message
         if (lastError?.code === 'ERR_OSSL_UNSUPPORTED' || lastError?.opensslErrorStack) {
-          throw new Error(
-            'Private key format error: The private key cannot be decoded by OpenSSL. ' +
-            'This usually means:\n' +
-            '1. The key has incorrect newline formatting in Vercel\n' +
-            '2. The key is corrupted or truncated\n' +
-            '3. The key format is not supported by the Node.js version\n\n' +
-            'Original error: ' + lastError?.message + '\n\n' +
-            'SOLUTION: In Vercel, try pasting the key as a SINGLE LINE with escaped newlines:\n' +
-            'Replace all actual newlines with \\n (backslash-n) and paste as one line.\n' +
-            'Example: -----BEGIN PRIVATE KEY-----\\nMIIE...\\n-----END PRIVATE KEY-----\\n'
-          );
+          const errorMsg = 
+            'CRITICAL: Private key cannot be decoded by OpenSSL.\n\n' +
+            'The key format in Vercel is incorrect. Here\'s how to fix it:\n\n' +
+            '1. Go to Vercel Dashboard → Settings → Environment Variables\n' +
+            '2. DELETE the GOOGLE_PRIVATE_KEY variable\n' +
+            '3. Create a NEW one with the same name\n' +
+            '4. Paste your key as a SINGLE LINE with \\n (backslash-n) instead of actual newlines\n' +
+            '5. Format: -----BEGIN PRIVATE KEY-----\\nMIIE...\\n-----END PRIVATE KEY-----\\n\n' +
+            '6. Redeploy after updating\n\n' +
+            'Original error: ' + lastError?.message;
+          
+          console.error('❌ [DEBUG]', errorMsg);
+          throw new Error(errorMsg);
         }
         throw lastError;
       }
       
-      console.log('🔍 [DEBUG] JWT auth object created, initializing Google Sheets API client...');
+      console.log('🔍 [DEBUG] Auth object created, initializing Google Sheets API client...');
       this.sheets = google.sheets({ version: 'v4', auth });
       
       console.log('✅ [DEBUG] Google Sheets API client initialized');
