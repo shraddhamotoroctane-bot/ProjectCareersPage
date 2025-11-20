@@ -31,11 +31,26 @@ async function getApp(): Promise<express.Application> {
   expressApp.use(express.json());
   expressApp.use(express.urlencoded({ extended: false }));
 
-  // CORS headers for Vercel
+  // CORS headers for Vercel - Restrict origins based on environment
   expressApp.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // In production, restrict to specific domains
+    const allowedOrigins = process.env.ALLOWED_ORIGINS 
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : ['http://localhost:5000', 'http://localhost:5173']; // Development defaults
+    
+    const origin = req.headers.origin;
+    
+    // Allow requests from allowed origins or same-origin requests
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (!origin) {
+      // Same-origin requests (no Origin header)
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     if (req.method === 'OPTIONS') {
       return res.sendStatus(200);
     }
