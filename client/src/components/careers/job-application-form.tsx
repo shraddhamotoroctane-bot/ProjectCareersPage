@@ -166,6 +166,24 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
         question: "How many years of relevant experience do you have in Social Media?",
         type: 'rating',
         scale: { min: 1, max: 10 }
+      },
+      {
+        question: "Please share your work links for reference *",
+        type: 'textarea'
+      }
+    ];
+  }
+
+  // Special handling for Graphic Designer positions
+  if (title.includes('graphic designer') || title.includes('graphic') || title.includes('designer')) {
+    return [
+      {
+        question: "Please share your work links for reference *",
+        type: 'textarea'
+      },
+      {
+        question: "Which software are you proficient in?",
+        type: 'textarea'
       }
     ];
   }
