@@ -646,7 +646,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
 
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Upload Resume/CV *</Label>
+                <FormLabel>Upload Resume / CV <span className="text-xs text-muted-foreground font-normal ml-1">(Max 5MB, PDF/DOC/DOCX)</span></FormLabel>
                 <div className="relative mb-4">
                   <Input
                     type="file"
