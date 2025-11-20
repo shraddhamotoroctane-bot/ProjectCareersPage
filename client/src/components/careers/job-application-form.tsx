@@ -42,8 +42,9 @@ const basicInfoSchema = z.object({
 });
 
 // Step 2: Job-Specific Questions Schema (dynamic based on job)
+// All questions are required with minimum length validation
 const jobSpecificSchema = z.object({
-  questions: z.record(z.string().optional())
+  questions: z.record(z.string().min(1, "This field is required"))
 });
 
 type BasicInfoData = z.infer<typeof basicInfoSchema>;
@@ -64,8 +65,8 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
   const title = job.title?.toLowerCase() || '';
 
   // Special handling for Videographer and Editor positions
-  if (title.includes('videographer') || title.includes('video editor') || 
-      title.includes('video') || title.includes('editor')) {
+  if (title.includes('videographer') || title.includes('video editor') ||
+    title.includes('video') || title.includes('editor')) {
     return [
       {
         question: "Proficiency at handling DSLR Gimbal:",
@@ -119,8 +120,8 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
   }
 
   // Special handling for Content Writer positions
-  if (title.includes('content writer') || title.includes('writer') || 
-      (title.includes('content') && title.includes('writer'))) {
+  if (title.includes('content writer') || title.includes('writer') ||
+    (title.includes('content') && title.includes('writer'))) {
     return [
       {
         question: "What do you enjoy the most about content writing?",
@@ -138,8 +139,8 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
   }
 
   // Special handling for Social Media and Content Creation positions
-  if (title.includes('social media') || title.includes('content creation') || 
-      title.includes('social') || title.includes('content')) {
+  if (title.includes('social media') || title.includes('content creation') ||
+    title.includes('social') || title.includes('content')) {
     return [
       {
         question: "Will you be open to work as an intern if you don't have any experience?",
@@ -256,8 +257,8 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const isInternship = job.type?.toLowerCase().includes('internship') || 
-                      job.title?.toLowerCase().includes('internship');
+  const isInternship = job.type?.toLowerCase().includes('internship') ||
+    job.title?.toLowerCase().includes('internship');
   const jobSpecificQuestions: QuestionConfig[] = getJobSpecificQuestions(job);
   const isStepRequired = jobSpecificQuestions.length > 0;
 
@@ -305,7 +306,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
       formData.append('lastName', basicData.lastName);
       formData.append('email', basicData.email);
       formData.append('phone', basicData.phone);
-      
+
       if (cvFile) {
         formData.append('cv', cvFile);
       }
@@ -338,7 +339,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
         try {
           const json = JSON.parse(text);
           details = json.details || json.error || text;
-        } catch {}
+        } catch { }
         console.error('Application submit failed:', response.status, details);
         throw new Error(`Failed to submit application (HTTP ${response.status}). ${details}`);
       }
@@ -386,7 +387,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
     console.log('Step 2 form submission triggered');
     console.log('Form data:', data);
     console.log('Basic info available:', basicInfo);
-    
+
     // Check if basic info is missing and navigate back
     if (!basicInfo) {
       console.error('Basic info is missing - navigating back to step 1');
@@ -430,10 +431,10 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
       setTimeout(() => {
         // Try multiple selectors to find the scrollable content
         const scrollableElement = document.querySelector('.overflow-y-auto') ||
-                                 document.querySelector('[data-radix-dialog-content] .overflow-y-auto') ||
-                                 document.querySelector('.DialogContent .overflow-y-auto') ||
-                                 document.querySelector('[role="dialog"] .overflow-y-auto');
-        
+          document.querySelector('[data-radix-dialog-content] .overflow-y-auto') ||
+          document.querySelector('.DialogContent .overflow-y-auto') ||
+          document.querySelector('[role="dialog"] .overflow-y-auto');
+
         if (scrollableElement) {
           scrollableElement.scrollTop = 0;
         }
@@ -450,7 +451,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
             <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">Personal Information</h3>
             <p className="text-xs text-gray-600">Please provide your basic details</p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={basicForm.control}
@@ -548,160 +549,160 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                 <h3 className="text-lg font-semibold text-gray-900">Professional Information</h3>
                 <p className="text-sm text-gray-600">Help us understand your salary expectations (optional)</p>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={basicForm.control}
-                    name="currentSalary"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-foreground">
-                          Current/Previous Salary
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="₹5,00,000 per annum"
-                            {...field}
-                            data-testid="input-currentSalary"
-                            className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={basicForm.control}
-                    name="expectedSalary"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-foreground">
-                          Expected Salary
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="₹6,00,000 per annum"
-                            {...field}
-                            data-testid="input-expectedSalary"
-                            className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Application Materials Section */}
-            <div className="space-y-6">
-              <div className="border-b border-gray-200 pb-2">
-                <h3 className="text-lg font-semibold text-gray-900">Application Materials</h3>
-                <p className="text-sm text-gray-600">Upload your resume and answer location-related questions</p>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Upload Resume/CV</Label>
-                  <div className="relative">
-                    <Input
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={(e) => handleFileUpload(e.target.files?.[0])}
-                      className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
-                      data-testid="input-cv"
-                    />
-                    {cvFile && (
-                      <p className="text-xs text-green-600 mt-2 flex items-center">
-                        <span className="mr-1">✓</span>
-                        Selected: {cvFile.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <FormField
+                  control={basicForm.control}
+                  name="currentSalary"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-foreground">
+                        Current/Previous Salary
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="₹5,00,000 per annum"
+                          {...field}
+                          data-testid="input-currentSalary"
+                          className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={basicForm.control}
-                  name="canTravelToNaviMumbai"
+                  name="expectedSalary"
                   render={({ field }) => (
-                    <FormItem className="space-y-3">
+                    <FormItem>
                       <FormLabel className="text-sm font-medium text-foreground">
-                        Are you able to commute to Navi Mumbai daily? *
+                        Expected Salary
                       </FormLabel>
                       <FormControl>
-                        <RadioGroup
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          className="flex gap-6"
-                          data-testid="radio-travel-navi-mumbai"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="yes" id="travel-yes" className="border-gray-300 text-red-600" />
-                            <Label htmlFor="travel-yes" className="text-sm cursor-pointer font-medium">Yes, I can commute</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="no" id="travel-no" className="border-gray-300 text-red-600" />
-                            <Label htmlFor="travel-no" className="text-sm cursor-pointer font-medium">No, I cannot commute</Label>
-                          </div>
-                        </RadioGroup>
+                        <Input
+                          placeholder="₹6,00,000 per annum"
+                          {...field}
+                          data-testid="input-expectedSalary"
+                          className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        />
                       </FormControl>
-                      
-                      {/* Warning message when "No" is selected */}
-                      {field.value === "no" && (
-                        <div className="mt-2 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-md">
-                          <div className="flex items-start">
-                            <div className="flex-shrink-0">
-                              <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                            <div className="ml-3">
-                              <p className="text-sm text-amber-800 font-medium">
-                                Please note: We are currently looking for candidates who can commute to our Navi Mumbai office daily. Remote work is not available for this position.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
             </div>
+          )}
 
-            {/* Personal Statement Section */}
-            <div className="space-y-6">
-              <div className="border-b border-gray-200 pb-2">
-                <h3 className="text-lg font-semibold text-gray-900">Personal Statement</h3>
-                <p className="text-sm text-gray-600">Tell us about your motivation and unique value</p>
-              </div>
-              
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Why MotorOctane? How can you contribute to our growth that others cannot? *
-                </label>
-                <textarea
-                  placeholder="Share your passion for automotive content, your unique skills, experience, and how you can help MotorOctane reach new heights..."
-                  value={basicForm.watch("whyMotorOctane") || ""}
-                  onChange={(e) => basicForm.setValue("whyMotorOctane", e.target.value)}
-                  className="w-full min-h-[150px] p-4 border-2 border-gray-400 rounded-md focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none resize-vertical text-base bg-white shadow-sm"
-                  rows={6}
-                  required
-                />
-                {basicForm.formState.errors.whyMotorOctane && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {basicForm.formState.errors.whyMotorOctane.message}
-                  </p>
-                )}
-              </div>
+          {/* Application Materials Section */}
+          <div className="space-y-6">
+            <div className="border-b border-gray-200 pb-2">
+              <h3 className="text-lg font-semibold text-gray-900">Application Materials</h3>
+              <p className="text-sm text-gray-600">Upload your resume and answer location-related questions</p>
             </div>
 
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Upload Resume/CV</Label>
+                <div className="relative">
+                  <Input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => handleFileUpload(e.target.files?.[0])}
+                    className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                    data-testid="input-cv"
+                  />
+                  {cvFile && (
+                    <p className="text-xs text-green-600 mt-2 flex items-center">
+                      <span className="mr-1">✓</span>
+                      Selected: {cvFile.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <FormField
+                control={basicForm.control}
+                name="canTravelToNaviMumbai"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="text-sm font-medium text-foreground">
+                      Are you able to commute to Navi Mumbai daily? *
+                    </FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="flex gap-6"
+                        data-testid="radio-travel-navi-mumbai"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="yes" id="travel-yes" className="border-gray-300 text-red-600" />
+                          <Label htmlFor="travel-yes" className="text-sm cursor-pointer font-medium">Yes, I can commute</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="no" id="travel-no" className="border-gray-300 text-red-600" />
+                          <Label htmlFor="travel-no" className="text-sm cursor-pointer font-medium">No, I cannot commute</Label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+
+                    {/* Warning message when "No" is selected */}
+                    {field.value === "no" && (
+                      <div className="mt-2 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-md">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm text-amber-800 font-medium">
+                              Please note: We are currently looking for candidates who can commute to our Navi Mumbai office daily. Remote work is not available for this position.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Personal Statement Section */}
+          <div className="space-y-6">
+            <div className="border-b border-gray-200 pb-2">
+              <h3 className="text-lg font-semibold text-gray-900">Personal Statement</h3>
+              <p className="text-sm text-gray-600">Tell us about your motivation and unique value</p>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Why MotorOctane? How can you contribute to our growth that others cannot? *
+              </label>
+              <textarea
+                placeholder="Share your passion for automotive content, your unique skills, experience, and how you can help MotorOctane reach new heights..."
+                value={basicForm.watch("whyMotorOctane") || ""}
+                onChange={(e) => basicForm.setValue("whyMotorOctane", e.target.value)}
+                className="w-full min-h-[150px] p-4 border-2 border-gray-400 rounded-md focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none resize-vertical text-base bg-white shadow-sm"
+                rows={6}
+                required
+              />
+              {basicForm.formState.errors.whyMotorOctane && (
+                <p className="text-sm text-red-600 mt-1">
+                  {basicForm.formState.errors.whyMotorOctane.message}
+                </p>
+              )}
+            </div>
+          </div>
+
         </div>
-        
+
         {/* Submit Button - Always Visible */}
         <div className="bg-gradient-to-r from-gray-50 to-white border-t border-gray-200 pt-6 mt-8 px-6 pb-6 rounded-b-lg">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -741,7 +742,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
             <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">Job-Specific Questions</h3>
             <p className="text-xs sm:text-sm text-gray-600">Please answer these questions specific to the {job.title} role</p>
           </div>
-          
+
           <div className="space-y-4">
             {jobSpecificQuestions.map((questionConfig, index) => (
               <FormField
@@ -761,37 +762,35 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                               const fieldValue = field.value || '';
                               const currentValues = fieldValue ? fieldValue.split(', ').filter(v => v.trim() !== '') : [];
                               const isChecked = currentValues.includes(option);
-                              
+
                               return (
-                                <div 
-                                  key={optionIndex} 
-                                  className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
-                                    isChecked 
-                                      ? 'bg-red-100 border-red-400 shadow-md ring-2 ring-red-200' 
+                                <div
+                                  key={optionIndex}
+                                  className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${isChecked
+                                      ? 'bg-red-100 border-red-400 shadow-md ring-2 ring-red-200'
                                       : 'bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm'
-                                  }`}
+                                    }`}
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     const fieldValue = field.value || '';
                                     const currentValues = fieldValue ? fieldValue.split(', ').filter((v: string) => v.trim() !== '') : [];
                                     let newValues;
-                                    
+
                                     if (currentValues.includes(option)) {
                                       newValues = currentValues.filter((v: string) => v !== option);
                                     } else {
                                       newValues = [...currentValues, option];
                                     }
-                                    
+
                                     const newFieldValue = newValues.length > 0 ? newValues.join(', ') : '';
                                     field.onChange(newFieldValue);
                                   }}
                                 >
-                                  <div className={`w-5 h-5 border-2 rounded-sm flex items-center justify-center transition-all duration-200 ${
-                                    isChecked 
-                                      ? 'bg-red-600 border-red-600' 
+                                  <div className={`w-5 h-5 border-2 rounded-sm flex items-center justify-center transition-all duration-200 ${isChecked
+                                      ? 'bg-red-600 border-red-600'
                                       : 'bg-white border-gray-400'
-                                  }`}>
+                                    }`}>
                                     {isChecked && (
                                       <span className="text-white text-sm font-bold">✓</span>
                                     )}
@@ -811,7 +810,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                             })}
                           </div>
                         )}
-                        
+
                         {questionConfig.type === 'radio' && (
                           <div className="space-y-3">
                             {questionConfig.options?.map((option, optionIndex) => {
@@ -821,16 +820,15 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                               const fieldValue = field.value;
                               const currentValue = fieldValue || formValue;
                               const isSelected = currentValue === option;
-                              
-                              
+
+
                               return (
-                                <div 
+                                <div
                                   key={optionIndex}
-                                  className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                                    isSelected 
-                                      ? 'bg-red-100 border-red-500 shadow-lg ring-2 ring-red-200' 
+                                  className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${isSelected
+                                      ? 'bg-red-100 border-red-500 shadow-lg ring-2 ring-red-200'
                                       : 'bg-white border-gray-300 hover:border-gray-400 hover:shadow-md'
-                                  }`}
+                                    }`}
                                   onClick={() => {
                                     const normalizedFieldName = normalizeFieldName(questionConfig.question);
                                     field.onChange(option);
@@ -850,10 +848,9 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                                       }}
                                       className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
                                     />
-                                    <label 
-                                      className={`text-sm font-medium cursor-pointer ${
-                                        isSelected ? 'text-red-800 font-semibold' : 'text-gray-700'
-                                      }`}
+                                    <label
+                                      className={`text-sm font-medium cursor-pointer ${isSelected ? 'text-red-800 font-semibold' : 'text-gray-700'
+                                        }`}
                                     >
                                       {option}
                                     </label>
@@ -868,7 +865,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                             })}
                           </div>
                         )}
-                        
+
                         {questionConfig.type === 'rating' && questionConfig.scale && (
                           <div className="bg-gray-50 p-4 sm:p-6 rounded-lg border border-gray-200 space-y-4">
                             <div className="flex justify-between items-center">
@@ -914,7 +911,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                                       }}
                                     >
                                       {isSelected && (
-                                        <div 
+                                        <div
                                           style={{
                                             width: '8px',
                                             height: '8px',
@@ -930,7 +927,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                             </div>
                           </div>
                         )}
-                        
+
                         {(questionConfig.type === 'textarea' || questionConfig.type === 'text') && (
                           <Textarea
                             placeholder={questionConfig.type === 'textarea' ? "Please provide a detailed answer..." : "Your answer..."}
@@ -948,7 +945,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
             ))}
           </div>
         </div>
-        
+
         {/* Navigation Buttons - Always Visible */}
         <div className="bg-gradient-to-r from-gray-50 to-white border-t border-gray-200 pt-6 mt-8 px-6 pb-6 rounded-b-lg">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -1000,9 +997,9 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
             )}
           </DialogTitle>
         </DialogHeader>
-        
+
         {/* Scrollable Content Area */}
-        <div 
+        <div
           className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin"
           style={{ maxHeight: 'calc(75vh - 140px)' }}
         >
