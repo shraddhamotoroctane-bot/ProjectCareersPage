@@ -226,6 +226,10 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
         question: "Do you have knowledge about the automobile industry?",
         type: 'radio',
         options: ['Yes', 'No']
+      },
+      {
+        question: "Which role would you be interested in post-internship, if a suitable opportunity arises?",
+        type: 'textarea'
       }
     ];
   }
