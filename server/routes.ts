@@ -668,6 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Security: Only allow files with safe patterns
       if (!/^CV_[a-zA-Z0-9_]+\.(pdf|doc|docx)$/i.test(filename)) {
+        console.error(`🚨 Invalid filename format attempted: ${filename}`);
         return res.status(400).json({ error: "Invalid filename format" });
       }
 
@@ -675,6 +676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if file exists
       if (!fs.existsSync(filePath)) {
+        console.error(`❌ File not found: ${filePath}`);
         return res.status(404).json({ error: "File not found" });
       }
 
@@ -692,20 +694,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       }
 
-      // Set headers for file download/view
+      // Extract original filename (remove CV_ prefix and timestamp)
+      const originalFilename = filename.replace(/^CV_\d+_/, '');
+
+      // Set headers for file download
       res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Length', stats.size);
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${originalFilename}"`);
       res.setHeader('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+
+      // Prevent caching issues
+      res.setHeader('Pragma', 'public');
+      res.setHeader('Expires', '0');
 
       // Stream the file
       const fileStream = fs.createReadStream(filePath);
+
+      fileStream.on('error', (streamError) => {
+        console.error(`❌ Error streaming file ${filename}:`, streamError);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Failed to stream file" });
+        }
+      });
+
       fileStream.pipe(res);
 
-      console.log(`📥 File served: ${filename} (${stats.size} bytes)`);
+      console.log(`📥 File served for download: ${filename} (${stats.size} bytes)`);
     } catch (error) {
-      console.error("Error serving file:", error);
-      res.status(500).json({ error: "Failed to serve file" });
+      console.error("❌ Error serving file:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to serve file" });
+      }
     }
   });
 
