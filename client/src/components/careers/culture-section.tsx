@@ -1,10 +1,10 @@
 import { Heart, GraduationCap, Rocket } from "lucide-react";
-import seoAnalystImg from '@assets/Seo Analyst.jpg';
-import socialMediaCreatorImg from '@assets/Social Media.jpg';
-import internsImg from '@assets/Interns.jpg';
-import videographerImg from '@assets/Videographer.jpg';
-import anchorsImg from '@assets/Anchors.jpg';
-import contentWritersImg from '@assets/content writers.jpg';
+import seoAnalystImg from '@assets/Seo Analyst.webp';
+import socialMediaCreatorImg from '@assets/Social Media.webp';
+import internsImg from '@assets/Interns.webp';
+import videographerImg from '@assets/Videographer.webp';
+import anchorsImg from '@assets/Anchors.webp';
+import contentWritersImg from '@assets/content writers.webp';
 
 export default function CultureSection() {
   return (
@@ -18,68 +18,68 @@ export default function CultureSection() {
             Where passion meets performance. Join India's most dynamic automotive content team!
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div className="relative">
             {/* Team member collage */}
-            <div 
+            <div
               className="rounded-xl w-full h-56 sm:h-72 md:h-80 lg:h-96 overflow-hidden shadow-lg"
               data-testid="culture-team-collage"
             >
               <div className="grid grid-cols-3 grid-rows-2 gap-0.5 sm:gap-1 h-full">
                 {/* SEO Analyst */}
                 <div className="relative">
-                  <img 
+                  <img
                     src={seoAnalystImg}
                     alt="SEO Analyst working on optimization"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
-                
+
                 {/* Social Media Creator */}
                 <div className="relative">
-                  <img 
+                  <img
                     src={socialMediaCreatorImg}
                     alt="Social Media Content Creator"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
-                
+
                 {/* Interns */}
                 <div className="relative">
-                  <img 
+                  <img
                     src={internsImg}
                     alt="Interns learning and working"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
-                
+
                 {/* Videographer */}
                 <div className="relative">
-                  <img 
+                  <img
                     src={videographerImg}
                     alt="Professional videographer filming"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
-                
+
                 {/* Anchors */}
                 <div className="relative">
-                  <img 
+                  <img
                     src={anchorsImg}
                     alt="Anchors presenting content"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
-                
+
                 {/* Content Writers */}
                 <div className="relative">
-                  <img 
+                  <img
                     src={contentWritersImg}
                     alt="Content writers creating articles"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
@@ -126,8 +126,8 @@ export default function CultureSection() {
             <p className="text-gray-800 dark:text-gray-200 font-bold text-lg">Team Satisfaction</p>
             <p className="text-gray-600 dark:text-gray-300 mt-1 font-medium">Love what they do</p>
           </div>
-          <div 
-            className="text-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all duration-200 transform hover:scale-105" 
+          <div
+            className="text-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all duration-200 transform hover:scale-105"
             data-testid="stat-rating"
             onClick={() => window.open('https://www.glassdoor.co.in/Overview/Working-at-MotorOctane-EI_IE5702812.11,22.htm', '_blank')}
             role="button"
@@ -144,8 +144,8 @@ export default function CultureSection() {
             <p className="text-gray-600 dark:text-gray-300 mt-1 font-medium">Top workplace culture</p>
             <p className="text-xs text-primary/70 mt-2 font-medium">Click to view reviews →</p>
           </div>
-          <div 
-            className="text-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all duration-200 transform hover:scale-105" 
+          <div
+            className="text-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all duration-200 transform hover:scale-105"
             data-testid="stat-ambitionbox"
             onClick={() => window.open('https://www.ambitionbox.com/reviews/rmh-motoroctane-reviews', '_blank')}
             role="button"

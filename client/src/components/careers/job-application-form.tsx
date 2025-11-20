@@ -616,12 +616,12 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Upload Resume/CV *</Label>
-                <div className="relative mb-3">
+                <div className="relative mb-4">
                   <Input
                     type="file"
                     accept=".pdf,.doc,.docx"
                     onChange={(e) => handleFileUpload(e.target.files?.[0])}
-                    className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                    className="h-14 py-3 border-gray-300 focus:border-red-500 focus:ring-red-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer"
                     data-testid="input-cv"
                   />
                   {cvFile && (
