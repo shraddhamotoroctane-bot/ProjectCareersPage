@@ -92,9 +92,9 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
         options: ['Yes', 'No']
       },
       {
-        question: "Which software's can you edit on? Mention below",
-        type: 'radio',
-        options: ['FCP X', 'Premiere Pro', 'FCP 7', 'Premiere Rush']
+        question: "Which software's can you edit on? (Select all that apply)",
+        type: 'checkbox',
+        options: ['FCP', 'Premiere Pro', 'After Effects', 'Others']
       },
       {
         question: "How well can you colour grade on a scale of 1-10?",
@@ -771,25 +771,48 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                             {questionConfig.options?.map((option, optionIndex) => {
                               const fieldValue = field.value || '';
                               const currentValues = fieldValue ? fieldValue.split(', ').filter(v => v.trim() !== '') : [];
-                              const isChecked = currentValues.includes(option);
+
+                              // Check if this option is selected
+                              // Special handling for "Others" which might have text appended
+                              const isOthers = option === 'Others';
+                              const isChecked = isOthers
+                                ? currentValues.some(v => v.startsWith('Others'))
+                                : currentValues.includes(option);
+
+                              // Get the existing text for "Others" if present
+                              const othersText = isOthers && isChecked
+                                ? currentValues.find(v => v.startsWith('Others'))?.replace('Others: ', '').replace('Others', '') || ''
+                                : '';
 
                               return (
                                 <div
                                   key={optionIndex}
-                                  className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${isChecked
+                                  className={`flex flex-col sm:flex-row sm:items-center p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${isChecked
                                     ? 'bg-red-100 border-red-400 shadow-md ring-2 ring-red-200'
                                     : 'bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm'
                                     }`}
                                   onClick={(e) => {
+                                    // Prevent triggering when clicking the input itself
+                                    if ((e.target as HTMLElement).tagName === 'INPUT' && (e.target as HTMLInputElement).type === 'text') {
+                                      return;
+                                    }
+
                                     e.preventDefault();
                                     e.stopPropagation();
+
                                     const fieldValue = field.value || '';
                                     const currentValues = fieldValue ? fieldValue.split(', ').filter((v: string) => v.trim() !== '') : [];
                                     let newValues;
 
-                                    if (currentValues.includes(option)) {
-                                      newValues = currentValues.filter((v: string) => v !== option);
+                                    if (isChecked) {
+                                      // Uncheck: remove the option (and any text with it for Others)
+                                      if (isOthers) {
+                                        newValues = currentValues.filter((v: string) => !v.startsWith('Others'));
+                                      } else {
+                                        newValues = currentValues.filter((v: string) => v !== option);
+                                      }
                                     } else {
+                                      // Check: add the option
                                       newValues = [...currentValues, option];
                                     }
 
@@ -797,19 +820,50 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                                     field.onChange(newFieldValue);
                                   }}
                                 >
-                                  <div className={`w-5 h-5 border-2 rounded-sm flex items-center justify-center transition-all duration-200 ${isChecked
-                                    ? 'bg-red-600 border-red-600'
-                                    : 'bg-white border-gray-400'
-                                    }`}>
-                                    {isChecked && (
-                                      <span className="text-white text-sm font-bold">✓</span>
-                                    )}
+                                  <div className="flex items-center mb-2 sm:mb-0">
+                                    <div className={`w-5 h-5 border-2 rounded-sm flex items-center justify-center transition-all duration-200 flex-shrink-0 ${isChecked
+                                      ? 'bg-red-600 border-red-600'
+                                      : 'bg-white border-gray-400'
+                                      }`}>
+                                      {isChecked && (
+                                        <span className="text-white text-sm font-bold">✓</span>
+                                      )}
+                                    </div>
+                                    <span className={`ml-3 text-sm font-medium ${isChecked ? 'text-red-800 font-semibold' : 'text-gray-700'}`}>
+                                      {option}
+                                    </span>
                                   </div>
-                                  <span className={`text-sm font-medium flex-grow ${isChecked ? 'text-red-800 font-semibold' : 'text-gray-700'}`}>
-                                    {option}
-                                  </span>
-                                  {isChecked && (
-                                    <div className="flex-shrink-0">
+
+                                  {/* Text input for "Others" option */}
+                                  {isOthers && isChecked && (
+                                    <div className="ml-0 sm:ml-4 flex-grow w-full sm:w-auto">
+                                      <input
+                                        type="text"
+                                        placeholder="Please specify..."
+                                        className="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                                        value={othersText}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={(e) => {
+                                          const newText = e.target.value;
+                                          const fieldValue = field.value || '';
+                                          const currentValues = fieldValue ? fieldValue.split(', ').filter((v: string) => v.trim() !== '') : [];
+
+                                          // Remove existing "Others..." entry
+                                          const otherValues = currentValues.filter((v: string) => !v.startsWith('Others'));
+
+                                          // Add updated "Others: text" entry
+                                          // If text is empty, just keep "Others" to maintain checked state
+                                          const newOthersEntry = newText.trim() ? `Others: ${newText}` : 'Others';
+
+                                          const newValues = [...otherValues, newOthersEntry];
+                                          field.onChange(newValues.join(', '));
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {!isOthers && isChecked && (
+                                    <div className="ml-auto flex-shrink-0 hidden sm:block">
                                       <div className="bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">
                                         ✓ SELECTED
                                       </div>

@@ -45,7 +45,7 @@ export class GoogleDriveService {
   async createFolderIfNotExists(folderName: string): Promise<string> {
     try {
       await this.ensureInitialized();
-      
+
       // Check if folder already exists
       const response = await this.drive.files.list({
         q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder'`,
@@ -87,7 +87,7 @@ export class GoogleDriveService {
   async uploadFile(fileBuffer: Buffer, fileName: string, mimeType: string, folderId?: string): Promise<string> {
     try {
       await this.ensureInitialized();
-      
+
       const fileMetadata: any = {
         name: fileName
       };
@@ -118,12 +118,12 @@ export class GoogleDriveService {
         }
       });
 
-      // Generate direct download link
-      const downloadLink = `https://drive.google.com/uc?id=${fileId}&export=download`;
-      
+      // Generate view link (more reliable than direct download)
+      const downloadLink = `https://drive.google.com/file/d/${fileId}/view`;
+
       console.log(`Uploaded file to Google Drive: ${fileName} with ID: ${fileId}`);
-      console.log(`Direct download link: ${downloadLink}`);
-      
+      console.log(`Direct view link: ${downloadLink}`);
+
       return downloadLink;
     } catch (error) {
       console.error('Error uploading file to Google Drive:', error);
@@ -135,7 +135,7 @@ export class GoogleDriveService {
     try {
       // Ensure MotorOctane CVs folder exists
       const folderId = await this.createFolderIfNotExists('MotorOctane CVs');
-      
+
       // Upload file to the folder
       return await this.uploadFile(fileBuffer, fileName, mimeType, folderId);
     } catch (error) {
@@ -148,7 +148,7 @@ export class GoogleDriveService {
     try {
       // Ensure MotorOctane Cover Letters folder exists
       const folderId = await this.createFolderIfNotExists('MotorOctane Cover Letters');
-      
+
       // Upload file to the folder
       return await this.uploadFile(fileBuffer, fileName, mimeType, folderId);
     } catch (error) {
