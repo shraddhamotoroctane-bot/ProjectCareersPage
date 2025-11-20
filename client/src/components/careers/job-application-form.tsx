@@ -134,6 +134,11 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
       {
         question: "How do you integrate SEO into your content?",
         type: 'textarea'
+      },
+      {
+        question: "Do you have knowledge about the automobile industry?",
+        type: 'radio',
+        options: ['Yes', 'No']
       }
     ];
   }
@@ -217,7 +222,12 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
     return [
       { question: "Are you currently studying?", type: 'text' },
       { question: "Can you dedicate 6 months for full time work?", type: 'text' },
-      { question: "We can offer Rs 8000 stipend per month - if ok then we proceed with your application", type: 'text' }
+      { question: "We can offer Rs 8000 stipend per month - if ok then we proceed with your application", type: 'text' },
+      {
+        question: "Do you have knowledge about the automobile industry?",
+        type: 'radio',
+        options: ['Yes', 'No']
+      }
     ];
   }
 
