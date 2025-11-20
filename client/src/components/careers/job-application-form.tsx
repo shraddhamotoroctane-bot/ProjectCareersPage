@@ -136,9 +136,8 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
         type: 'textarea'
       },
       {
-        question: "Do you have knowledge about the automobile industry?",
-        type: 'radio',
-        options: ['Yes', 'No']
+        question: "Do you have any prior experience in automobiles? If so, please specify.",
+        type: 'textarea'
       }
     ];
   }
@@ -155,7 +154,7 @@ const getJobSpecificQuestions = (job: JobOpening): QuestionConfig[] => {
       {
         question: "Have you done any courses on social media with certification?",
         type: 'radio',
-        options: ['Yes', 'No', 'Maybe']
+        options: ['Yes', 'No']
       },
       {
         question: "Can you edit photos and videos on a phone?",
