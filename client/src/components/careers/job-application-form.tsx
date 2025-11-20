@@ -372,6 +372,16 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
 
   // Step 1 submission (Basic Info)
   const onBasicInfoSubmit = (data: BasicInfoData) => {
+    // Validate CV file is uploaded
+    if (!cvFile) {
+      toast({
+        title: "Resume Required",
+        description: "Please upload your resume/CV to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setBasicInfo(data);
     if (!isStepRequired) {
       // For jobs without additional questions, submit directly
@@ -605,7 +615,7 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
 
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Upload Resume/CV</Label>
+                <Label className="text-sm font-medium text-gray-700">Upload Resume/CV *</Label>
                 <div className="relative">
                   <Input
                     type="file"
@@ -767,8 +777,8 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                                 <div
                                   key={optionIndex}
                                   className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${isChecked
-                                      ? 'bg-red-100 border-red-400 shadow-md ring-2 ring-red-200'
-                                      : 'bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm'
+                                    ? 'bg-red-100 border-red-400 shadow-md ring-2 ring-red-200'
+                                    : 'bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm'
                                     }`}
                                   onClick={(e) => {
                                     e.preventDefault();
@@ -788,8 +798,8 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                                   }}
                                 >
                                   <div className={`w-5 h-5 border-2 rounded-sm flex items-center justify-center transition-all duration-200 ${isChecked
-                                      ? 'bg-red-600 border-red-600'
-                                      : 'bg-white border-gray-400'
+                                    ? 'bg-red-600 border-red-600'
+                                    : 'bg-white border-gray-400'
                                     }`}>
                                     {isChecked && (
                                       <span className="text-white text-sm font-bold">✓</span>
@@ -826,8 +836,8 @@ export default function JobApplicationForm({ job, open, onOpenChange }: JobAppli
                                 <div
                                   key={optionIndex}
                                   className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${isSelected
-                                      ? 'bg-red-100 border-red-500 shadow-lg ring-2 ring-red-200'
-                                      : 'bg-white border-gray-300 hover:border-gray-400 hover:shadow-md'
+                                    ? 'bg-red-100 border-red-500 shadow-lg ring-2 ring-red-200'
+                                    : 'bg-white border-gray-300 hover:border-gray-400 hover:shadow-md'
                                     }`}
                                   onClick={() => {
                                     const normalizedFieldName = normalizeFieldName(questionConfig.question);
