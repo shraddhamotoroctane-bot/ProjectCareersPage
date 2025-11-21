@@ -8,6 +8,7 @@ import { z } from "zod";
 import path from "path";
 import fs from "fs";
 import { GoogleDriveService } from "./googleDriveService.js";
+import { sendApplicationConfirmation } from "./emailService.js";
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(process.cwd(), 'server', 'uploads');
@@ -561,6 +562,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('💾 Calling storage.createApplication...');
       const application = await storage.createApplication(applicationData);
       console.log('✅ Application created with ID:', application.id);
+
+      // Send confirmation email (don't block on failure)
+      console.log('📧 Sending confirmation email...');
+      try {
+        const fullName = `${applicationData.firstName} ${applicationData.lastName}`;
+        const emailResult = await sendApplicationConfirmation(
+          applicationData.email,
+          fullName,
+          req.body.position || 'Job Position', // Use position from form
+          applicationData.phone
+        );
+
+        if (emailResult.success) {
+          console.log('✅ Confirmation email sent successfully');
+        } else {
+          console.error('⚠️ Failed to send confirmation email (non-blocking):', emailResult.error);
+        }
+      } catch (emailError: any) {
+        // Log but don't fail the application
+        console.error('⚠️ Email service error (non-blocking):', emailError?.message || emailError);
+      }
 
       const response = {
         ...application,
