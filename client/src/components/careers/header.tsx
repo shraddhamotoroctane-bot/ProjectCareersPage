@@ -11,19 +11,10 @@ export default function Header() {
   // Header is only visible when actually at the top of the page
   const isHidden = !atTop;
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-    setIsMenuOpen(false);
-  };
-
   return (
-    <div 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out overflow-visible ${
-        isHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
-      }`}
+    <div
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out overflow-visible ${isHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
+        }`}
       style={{ willChange: 'transform' }}
       data-testid="header-shell"
     >
@@ -33,89 +24,128 @@ export default function Header() {
           <div className="flex justify-between items-center h-18 md:h-20 lg:h-22 xl:h-24">
             {/* Logo Container - inside header */}
             <div className={`flex items-center transition-opacity duration-300 ${isMenuOpen ? 'md:opacity-100 opacity-0' : 'opacity-100'}`} data-testid="logo-container">
-              <img 
-                src={aapkaAutoExpertLogo} 
-                alt="Aapka Auto Expert" 
-                className="h-16 w-auto max-w-[160px] sm:h-18 sm:max-w-[180px] md:h-20 md:max-w-[200px] lg:h-22 lg:max-w-[220px] xl:h-24 xl:max-w-[240px] object-contain" 
+              <img
+                src={aapkaAutoExpertLogo}
+                alt="Aapka Auto Expert"
+                className="h-16 w-auto max-w-[160px] sm:h-18 sm:max-w-[180px] md:h-20 md:max-w-[200px] lg:h-22 lg:max-w-[220px] xl:h-24 xl:max-w-[240px] object-contain"
                 data-testid="company-logo"
               />
             </div>
-          <nav className="hidden md:flex space-x-8">
+            <nav className="hidden md:flex space-x-8">
+              <a
+                href="https://motoroctane.com/"
+                className="text-gray-600 hover:text-red-600 transition-colors"
+                data-testid="nav-home"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Home
+              </a>
+              <a
+                href="https://carconsultancy.in/home/"
+                className="text-gray-600 hover:text-red-600 transition-colors"
+                data-testid="nav-car-consultancy"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Car Consultancy
+              </a>
+              <a
+                href="https://motoroctane.com/news"
+                className="text-gray-600 hover:text-red-600 transition-colors"
+                data-testid="nav-owners-review"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Owners Review
+              </a>
+              <a
+                href="#"
+                className="text-red-600 font-medium"
+                data-testid="nav-careers"
+                onClick={(e) => e.preventDefault()}
+              >
+                Careers
+              </a>
+              <a
+                href="https://motoroctane.com/videos"
+                className="text-gray-600 hover:text-red-600 transition-colors"
+                data-testid="nav-videos"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Videos
+              </a>
+            </nav>
             <button
-              onClick={() => scrollToSection('home')}
-              className="text-gray-600 hover:text-red-600 transition-colors"
-              data-testid="nav-home"
+              className="md:hidden"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              data-testid="mobile-menu-toggle"
             >
-              Home
+              {isMenuOpen ? (
+                <X className="text-xl text-gray-700" />
+              ) : (
+                <Menu className="text-xl text-gray-700" />
+              )}
             </button>
-            <button
-              onClick={() => scrollToSection('about')}
-              className="text-gray-600 hover:text-red-600 transition-colors"
-              data-testid="nav-about"
-            >
-              About
-            </button>
-            <button
-              onClick={() => scrollToSection('jobs')}
-              className="text-red-600 font-medium"
-              data-testid="nav-careers"
-            >
-              Careers
-            </button>
-            <button
-              onClick={() => scrollToSection('contact')}
-              className="text-gray-600 hover:text-red-600 transition-colors"
-              data-testid="nav-contact"
-            >
-              Contact
-            </button>
-          </nav>
-          <button
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            data-testid="mobile-menu-toggle"
-          >
-            {isMenuOpen ? (
-              <X className="text-xl text-gray-700" />
-            ) : (
-              <Menu className="text-xl text-gray-700" />
-            )}
-          </button>
+          </div>
         </div>
-        </div>
-        
+
         {/* Mobile menu */}
         {isMenuOpen && (
           <div className="md:hidden pb-4 px-4 sm:px-6 lg:px-8 bg-white/98 backdrop-blur-sm border-t border-red-200 shadow-lg">
             <nav className="flex flex-col space-y-4 pt-4">
-              <button
-                onClick={() => scrollToSection('home')}
+              <a
+                href="https://motoroctane.com/"
                 className="text-gray-600 hover:text-red-600 transition-colors text-left py-2"
                 data-testid="mobile-nav-home"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Home
-              </button>
-              <button
-                onClick={() => scrollToSection('about')}
+              </a>
+              <a
+                href="https://carconsultancy.in/home/"
                 className="text-gray-600 hover:text-red-600 transition-colors text-left py-2"
-                data-testid="mobile-nav-about"
+                data-testid="mobile-nav-car-consultancy"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMenuOpen(false)}
               >
-                About
-              </button>
-              <button
-                onClick={() => scrollToSection('jobs')}
+                Car Consultancy
+              </a>
+              <a
+                href="https://motoroctane.com/news"
+                className="text-gray-600 hover:text-red-600 transition-colors text-left py-2"
+                data-testid="mobile-nav-owners-review"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Owners Review
+              </a>
+              <a
+                href="#"
                 className="text-red-600 font-medium text-left py-2"
                 data-testid="mobile-nav-careers"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsMenuOpen(false);
+                }}
               >
                 Careers
-              </button>
-              <button
-                onClick={() => scrollToSection('contact')}
+              </a>
+              <a
+                href="https://motoroctane.com/videos"
                 className="text-gray-600 hover:text-red-600 transition-colors text-left py-2"
-                data-testid="mobile-nav-contact"
+                data-testid="mobile-nav-videos"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMenuOpen(false)}
               >
-                Contact
-              </button>
+                Videos
+              </a>
             </nav>
           </div>
         )}
