@@ -4,7 +4,7 @@ export default function HeroSection() {
   // Helper function to move text up for mobile and desktop
   const getTextPosition = (moveUp = false) => {
     if (!moveUp) return "";
-    return "-translate-y-20 sm:-translate-y-24 md:-translate-y-48 lg:-translate-y-56 xl:-translate-y-64";
+    return "md:-translate-y-48 lg:-translate-y-56 xl:-translate-y-64";
   };
 
   // Helper function to move buttons up for desktop only  
