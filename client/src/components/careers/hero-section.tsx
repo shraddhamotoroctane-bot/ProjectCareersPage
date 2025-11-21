@@ -29,7 +29,7 @@ export default function HeroSection() {
   return (
     <section className="relative text-primary-foreground overflow-hidden mt-18 md:mt-20 lg:mt-22 xl:mt-24">
       {/* FIXED BACKGROUND IMAGE LAYER - Never changes */}
-      <div className="absolute inset-0 w-full h-[600px] lg:h-[700px] xl:h-[800px]">
+      <div className="absolute inset-0 w-full h-[450px] lg:h-[700px] xl:h-[800px]">
         {/* Desktop background image */}
         <div
           className="absolute inset-0 hidden md:block"
@@ -66,7 +66,7 @@ export default function HeroSection() {
       </div>
 
       {/* SEPARATE TEXT CONTENT LAYER - Can be moved independently */}
-      <div className="relative z-10 w-full h-[600px] lg:h-[700px] xl:h-[800px] flex flex-col justify-center items-center text-center px-6 sm:px-6 lg:px-8">
+      <div className="relative z-10 w-full h-[450px] lg:h-[700px] xl:h-[800px] flex flex-col justify-center items-center text-center px-6 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           {/* Hero Title - Independently positioned */}
           <div className={`mb-6 sm:mb-8 ${getTextPosition(true)}`}>
