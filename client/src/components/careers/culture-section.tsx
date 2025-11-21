@@ -33,6 +33,7 @@ export default function CultureSection() {
                     src={seoAnalystImg}
                     alt="SEO Analyst working on optimization"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
@@ -43,6 +44,7 @@ export default function CultureSection() {
                     src={socialMediaCreatorImg}
                     alt="Social Media Content Creator"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
@@ -53,6 +55,7 @@ export default function CultureSection() {
                     src={internsImg}
                     alt="Interns learning and working"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
@@ -63,6 +66,7 @@ export default function CultureSection() {
                     src={videographerImg}
                     alt="Professional videographer filming"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
@@ -73,6 +77,7 @@ export default function CultureSection() {
                     src={anchorsImg}
                     alt="Anchors presenting content"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
@@ -83,6 +88,7 @@ export default function CultureSection() {
                     src={contentWritersImg}
                     alt="Content writers creating articles"
                     className="w-full h-full object-contain rounded-sm bg-gray-100"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-blue-900/10 rounded-sm"></div>
                 </div>
